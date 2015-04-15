@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include "network.h"
 
 int main (int argc, char *argv[])
 {
@@ -19,4 +17,9 @@ int main (int argc, char *argv[])
       printf("%2.4f %2.4f\n", gauss,gamma);
     }
   return(0);
+}
+
+int noiseg(pipe_ptr in) {
+
+return 0;
 }
