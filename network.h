@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
@@ -10,12 +12,14 @@ typedef struct pipe {
   double L;
   int N;
   int BCflag;
-  node *left, *right;
+  node_ptr *adjacent;
   double *flx, *prss;
 } pipe, *pipe_ptr;
 
 struct node {
-  pipe_ptr left, right;
+  int adj_n;
+  pipe_ptr *adj_p;
+  node_ptr *adj_k;
   double prss;
   double compress;
 };
@@ -27,13 +31,23 @@ struct noise_p {
 };
 
 struct network {
-  char fname[80], nname[80];
+  char fname[80], nname[80], matname[80];
   int nnodes;
   int nlinks;
   noise_p *noise;
-  node_ptr node;
-  pipe_ptr link; 
+  node_ptr *knot;
+  pipe_ptr *link; 
 };
 
+// aux.c
 extern int err_msg(char* msg);
+
+//
 extern int noise_status(noise_p *noise);
+
+// init.c
+extern void init_links(network *net);
+extern void allocate_memory(network *net, int *lm);
+
+// gsl_noise.c
+extern int init_network(char *filename, network *net);
