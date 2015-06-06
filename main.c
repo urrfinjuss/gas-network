@@ -9,7 +9,7 @@ int main (int argc, char *argv[])
   network syst;  
   init_network(argv[1], &syst);
   init_links(&syst);
-  err_msg("here");
+
 
   gsl_rng *r = gsl_rng_alloc(gsl_rng_mt19937);
   int i,n;

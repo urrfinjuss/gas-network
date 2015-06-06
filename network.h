@@ -5,6 +5,9 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+
+#define DEBUGMODE 1
+
 typedef struct network network;
 typedef struct node node, *node_ptr;
 typedef struct noise_p noise_p;
@@ -40,7 +43,8 @@ struct network {
 };
 
 // aux.c
-extern int err_msg(char* msg);
+extern void err_msg(char* msg);
+extern void debug_msg(char* msg);
 
 //
 extern int noise_status(noise_p *noise);
