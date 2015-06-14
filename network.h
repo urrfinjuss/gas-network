@@ -10,7 +10,7 @@
 #include <gsl/gsl_randist.h>
 
 
-#define DEBUGMODE 0
+#define DEBUGMODE 1
 
 typedef struct network network;
 typedef struct node node, *node_ptr;
@@ -27,9 +27,10 @@ typedef struct gpipe{
 
 struct node {
   int adj_n;
+  //int nl, nr;
   gpipe_ptr *adj_p;
   node_ptr *adj_k;
-  double P, F;
+  double P, *W, *Wb;
   double cratio;
 };
 
@@ -58,17 +59,16 @@ extern void debug_msg(char* msg);
 extern int noise_status(noise_p *noise);
 
 // init.c
+extern void init_data(network *net);
 extern void init_links(network *net);
 extern void init_arrays(network *net);
 extern void allocate_memory(network *net, int *lm);
+extern void rescale_data(network *net);
+extern int load_data(FILE *fh, gpipe_ptr lnk);
 
 // gsl_noise.c
 extern int init_network(char *filename, network *net);
 
-// ic.c
-extern void init_data(network *net);
-extern void load_data(FILE *fh, gpipe_ptr lnk);
-extern void rescale_data(network *net);
 // drawing.c
 extern void mgl_init_draw(network *net);
 extern void mgl_draw_pipe(gpipe_ptr in, network *net, char* fname, char* title);
@@ -76,8 +76,10 @@ extern void mgl_draw_pressure(network *net, char* fname, char* title);
 extern void mgl_draw_flux(network *net, char* fname, char* title);
 
 //evolve.c
+extern void init_nodes(network *net);
 extern void init_evolve(network *net);
 extern void hyperbolic_step(network *net);
+extern void sync_nodes(network *net);
 extern void evolve_network(network *net);
 
 

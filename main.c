@@ -39,6 +39,8 @@ int main (int argc, char *argv[])
 
 
   evolve_network(&syst);
+  //sync_nodes(&syst);
+  //hyperbolic_step(&syst);
 
   /*mgl_draw_pressure(&syst, "pressure2.png", "");
   mgl_draw_flux(&syst, "flux2.png", "");*/

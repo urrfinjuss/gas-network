@@ -73,7 +73,6 @@ void allocate_memory(network *net, int *lm) {
   memset(net->knot, 0, (net->nnodes)*sizeof(node_ptr));
   debug_msg("Pointers to pipes:\t");
   for (int i = 0; i < net->nlinks; i++) {
-    //net->link[i] = NULL;
     sprintf(msg, "%p\t", net->link[i]);
     debug_msg(msg); 
   }
@@ -82,10 +81,16 @@ void allocate_memory(network *net, int *lm) {
     net->knot[i] = malloc(sizeof(node));
     p_k = net->knot[i];
     p_k->adj_n = 0;
+    //p_k->nr = 0;
+    //p_k->nl = 0;
     for (int j = 0; j < net->nnodes; j++) {
 	(p_k->adj_n) += lm[j*(net->nnodes)+i]+lm[i*(net->nnodes)+j];
+	//(p_k->nl) += lm[j*(net->nnodes)+i];
+        //(p_k->nr) += lm[i*(net->nnodes)+j];
     }
     (net->knot[i])->adj_k = malloc(sizeof(node_ptr)*(p_k->adj_n));
+    (net->knot[i])->W  = malloc(sizeof(double)*(p_k->adj_n));
+    (net->knot[i])->Wb = malloc(sizeof(double)*(p_k->adj_n));
   }
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
@@ -98,18 +103,21 @@ void allocate_memory(network *net, int *lm) {
 	  l++;
 	}
         //p_k->adj_p = malloc(l*sizeof(gpipe_ptr));
-	
         //(net->knot[j])->adj_p = malloc(l*sizeof(gpipe_ptr));
     }
     p_k->adj_p = malloc((p_k->adj_n)*sizeof(gpipe_ptr));
     memset(p_k->adj_p, 0, (p_k->adj_n)*sizeof(gpipe_ptr));
-    sprintf(msg, "Knot %d connected via %d pipes (adj_n adjacent nodes  = %d) at %p and l = %d\n", i, l, p_k->adj_n, p_k, l);
+    sprintf(msg, "Knot %d connected via %d pipes (adj_n adjacent nodes  = %d) at %p\n", i, l, p_k->adj_n, p_k);
     debug_msg(msg);
+    //sprintf(msg, "Knot %d has %d connections from the left and %d from the right\n", i, p_k->nl, p_k->nr);
+    //debug_msg(msg);
   }
   int nlinks = 0;
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
     for (int j = 0; j < p_k->adj_n; j++) {
+      p_k->W[j] = 0.;
+      p_k->Wb[j] = 0.;
       //printf("%d of %d\t%p\n", j, p_k->adj_n, net->link[nlinks]);
       if ((p_k->adj_p[j]) == NULL) {
 	net->link[nlinks] = malloc(sizeof(gpipe));
@@ -155,7 +163,6 @@ void allocate_memory(network *net, int *lm) {
   debug_msg("\n");
   while(1) {
     if(fgets(msg, 256, fh)==NULL) break;
-    //printf("%s", msg);
     if( strcmp(msg, "#lengths\n")==0) {
 	dm = fgets(msg, 256, fh);
         sprintf(msg2, "Found pipe lengths\n");
@@ -201,10 +208,8 @@ void allocate_memory(network *net, int *lm) {
 	  debug_msg(msg2);
 	}
     }
-
   }
   fclose(fh);
-  //err_msg("Complete");
 }
 
 void init_arrays(network *net) {
@@ -222,7 +227,7 @@ void init_arrays(network *net) {
 }
 
 void init_data(network *net) {
-  char str[256];
+  char str[256], msg[256];
   FILE *fh;
   for (int j = 0; j < net->nlinks; j++) {
 	sprintf(str, "%s_%03d.txt", net->dname, j);
@@ -232,7 +237,12 @@ void init_data(network *net) {
 		sprintf(str, "Missing initial data along pipe %d, %d points expected\n", j, (net->link[j])->N);
 		debug_msg(str);
 	} else {
-		load_data(fh, net->link[j]);
+		if (load_data(fh, net->link[j])) {
+		   sprintf(msg, "Data for pipe %d has wrong number of lines.\n%d data points expected\n", j, (net->link[j])->N);
+		   printf("%s", msg);
+		   fclose(fh);
+		   err_msg("Complete");
+ 		}
 		fclose(fh);
 	}
   }
@@ -240,7 +250,7 @@ void init_data(network *net) {
 }
 
 
-void load_data(FILE *fh, gpipe_ptr lnk) {
+int load_data(FILE *fh, gpipe_ptr lnk) {
   char line[256], val0[64], val1[64], val2[64], val3[64];
   char msg[80];
   char *dm;
@@ -261,6 +271,8 @@ void load_data(FILE *fh, gpipe_ptr lnk) {
 	   break;
 	}
   }
+  if (k != lnk->N) return 1;
+  else return 0;
 }
 
 void rescale_data(network *net) {
