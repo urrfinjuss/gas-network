@@ -3,8 +3,8 @@
 
 int main (int argc, char *argv[])
 {
-  char cwd[1024], outdir[1024];
-  char msg[1024], title[80];
+  char cwd[1024], outdir[1024], outdir2[1024];
+  char msg[1024], msg2[1024], title[80];
   network syst;  
 
   if (argc != 2) {
@@ -34,6 +34,12 @@ int main (int argc, char *argv[])
     sprintf(title, "t = %f", 0.);
     mgl_draw_pipe(syst.link[n], &syst, msg, title);
   }
+
+  sprintf(outdir2, "%s/network", cwd);
+  mkdir(outdir2, 0777);
+  sprintf(msg2, "%s/%s_%03d.png", outdir2, syst.dname, 0);
+  mgl_draw_network(&syst, msg2, title);
+
   /*mgl_draw_pressure(&syst, "pressure.png", "");
   mgl_draw_flux(&syst, "flux.png", "");*/
 

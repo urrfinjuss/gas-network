@@ -10,7 +10,7 @@
 #include <gsl/gsl_randist.h>
 
 
-#define DEBUGMODE 1
+#define DEBUGMODE 0
 
 typedef struct network network;
 typedef struct node node, *node_ptr;
@@ -18,6 +18,8 @@ typedef struct noise_p noise_p;
 typedef struct gpipe{
   double L;
   double d;
+  double W_l, Wb_r; // characteristics required to update pipe
+  double Wb_l, W_r; // characteristics required to update node
   int N;
   int BCflag;
   node_ptr left;
@@ -27,10 +29,10 @@ typedef struct gpipe{
 
 struct node {
   int adj_n;
-  //int nl, nr;
+  int nl, nr;
   gpipe_ptr *adj_p;
   node_ptr *adj_k;
-  double P, *W, *Wb;
+  double P, F;
   double cratio;
 };
 
@@ -74,6 +76,7 @@ extern void mgl_init_draw(network *net);
 extern void mgl_draw_pipe(gpipe_ptr in, network *net, char* fname, char* title);
 extern void mgl_draw_pressure(network *net, char* fname, char* title);
 extern void mgl_draw_flux(network *net, char* fname, char* title);
+extern void mgl_draw_network(network *net, char* fname, char* title);
 
 //evolve.c
 extern void init_nodes(network *net);

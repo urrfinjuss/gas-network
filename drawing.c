@@ -38,7 +38,7 @@ void mgl_draw_pipe(gpipe_ptr in, network *net, char* fname, char* title) {
 
   mgl_subplot(gr, 2, 1, 0, "");
   mgl_title(gr, "Pressure", "#", -2);
-  mgl_set_ranges(gr, 0, in->L, -10, 1200, 0, 0);
+  mgl_set_ranges(gr, 0, in->L, -10, 40, 0, 0);
   mgl_axis(gr,"xyz","","");
   mgl_plot_xy(gr, x, p, "b1","");
   mgl_legend(gr, 3, "", "");
@@ -46,11 +46,49 @@ void mgl_draw_pipe(gpipe_ptr in, network *net, char* fname, char* title) {
 
   mgl_subplot(gr, 2, 1, 1, "");
   mgl_title(gr, "Flux", "#", -2);
-  mgl_set_ranges(gr, 0, in->L, -1200, 1200, 0, 0);
+  mgl_set_ranges(gr, 0, in->L, -60, 60, 0, 0);
   mgl_axis(gr,"xyz","","");
   mgl_plot_xy(gr, x, m, "b1","");
   mgl_box(gr);
 
+  mgl_write_png_solid(gr, fname,"");
+  mgl_delete_graph(gr);
+}
+
+void mgl_draw_network(network *net, char* fname, char* title) {
+  char str1[80], str2[80];
+  gpipe_ptr in;
+  //gpipe_ptr last = net->link[(net->nlinks)-1];
+  gr = mgl_create_graph(1440,800);
+
+  //mgl_data_create(q, in->N, 1, 1);
+  //mgl_title(gr, "Network", "#", -2);
+  mgl_add_legend(gr, title,"");
+  for (int n = 0; n < net->nlinks; n++) {   	
+    in = net->link[n];
+    mgl_data_create(x, in->N, 1, 1);
+    mgl_data_create(p, in->N, 1, 1);
+    mgl_data_create(m, in->N, 1, 1);
+    for (int k = 0; k < in->N; k++) {
+       mgl_data_set_value(x, (in->L)*k/(in->N - 1.), k, 0, 0);
+       mgl_data_set_value(p, 0.001*(in->p[k]), k, 0, 0);
+       mgl_data_set_value(m, (in->f[k])/cs, k, 0, 0);
+    }
+    
+
+    mgl_subplot(gr, net->nlinks, 2, n, "");    
+    mgl_set_ranges(gr, 0, in->L, -10, 10, 0, 0);
+    mgl_axis(gr,"xyz","","");
+    mgl_plot_xy(gr, x, p, "b1","");
+    mgl_legend(gr, 3, "", "");
+    mgl_box(gr);
+
+    mgl_subplot(gr, net->nlinks, 2, n+net->nlinks, "");
+    mgl_set_ranges(gr, 0, in->L, -40, 40, 0, 0);
+    mgl_axis(gr,"xyz","","");
+    mgl_plot_xy(gr, x, m, "b1","");
+    mgl_box(gr);
+  }
   mgl_write_png_solid(gr, fname,"");
   mgl_delete_graph(gr);
 }

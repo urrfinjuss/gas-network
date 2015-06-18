@@ -81,20 +81,21 @@ void allocate_memory(network *net, int *lm) {
     net->knot[i] = malloc(sizeof(node));
     p_k = net->knot[i];
     p_k->adj_n = 0;
-    //p_k->nr = 0;
-    //p_k->nl = 0;
+    p_k->nr = 0;
+    p_k->nl = 0;
     for (int j = 0; j < net->nnodes; j++) {
 	(p_k->adj_n) += lm[j*(net->nnodes)+i]+lm[i*(net->nnodes)+j];
-	//(p_k->nl) += lm[j*(net->nnodes)+i];
-        //(p_k->nr) += lm[i*(net->nnodes)+j];
+	(p_k->nl) += lm[j*(net->nnodes)+i];
+        (p_k->nr) += lm[i*(net->nnodes)+j];
     }
     (net->knot[i])->adj_k = malloc(sizeof(node_ptr)*(p_k->adj_n));
-    (net->knot[i])->W  = malloc(sizeof(double)*(p_k->adj_n));
-    (net->knot[i])->Wb = malloc(sizeof(double)*(p_k->adj_n));
+    //(net->knot[i])->F  = malloc(sizeof(double)*(p_k->adj_n));
+    //(net->knot[i])->W  = malloc(sizeof(double)*(p_k->nr));
+    //(net->knot[i])->Wb = malloc(sizeof(double)*(p_k->nl));
   }
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
-    l = 0;
+    l = 0; 
     for( int j = 0; j < net->nnodes; j++) {
 	o_k = net->knot[j];
 	if ((lm[j*(net->nnodes)+i]+lm[i*(net->nnodes)+j]) == 1) {
@@ -109,15 +110,15 @@ void allocate_memory(network *net, int *lm) {
     memset(p_k->adj_p, 0, (p_k->adj_n)*sizeof(gpipe_ptr));
     sprintf(msg, "Knot %d connected via %d pipes (adj_n adjacent nodes  = %d) at %p\n", i, l, p_k->adj_n, p_k);
     debug_msg(msg);
-    //sprintf(msg, "Knot %d has %d connections from the left and %d from the right\n", i, p_k->nl, p_k->nr);
-    //debug_msg(msg);
+    sprintf(msg, "Knot %d has %d outgoing and %d incoming connections\n", i, p_k->nl, p_k->nr);
+    debug_msg(msg);
   }
   int nlinks = 0;
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
     for (int j = 0; j < p_k->adj_n; j++) {
-      p_k->W[j] = 0.;
-      p_k->Wb[j] = 0.;
+      //p_k->W[j] = 0.;
+      //p_k->Wb[j] = 0.;
       //printf("%d of %d\t%p\n", j, p_k->adj_n, net->link[nlinks]);
       if ((p_k->adj_p[j]) == NULL) {
 	net->link[nlinks] = malloc(sizeof(gpipe));
