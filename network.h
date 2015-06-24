@@ -10,7 +10,7 @@
 #include <gsl/gsl_randist.h>
 
 
-#define DEBUGMODE 0
+#define DEBUGMODE 1
 
 typedef struct network network;
 typedef struct node node, *node_ptr;
@@ -67,6 +67,7 @@ extern void init_arrays(network *net);
 extern void allocate_memory(network *net, int *lm);
 extern void rescale_data(network *net);
 extern int load_data(FILE *fh, gpipe_ptr lnk);
+extern void save_data(FILE* fh, gpipe_ptr lnk, network* net);
 
 // gsl_noise.c
 extern int init_network(char *filename, network *net);
@@ -82,8 +83,11 @@ extern void mgl_draw_network(network *net, char* fname, char* title);
 extern void init_nodes(network *net);
 extern void init_evolve(network *net);
 extern void hyperbolic_step(network *net);
+extern void nonlinear_hstep(network* net, double dt);
 extern void sync_nodes(network *net);
 extern void evolve_network(network *net);
+extern void split_step2(network *net, double dt);
+
 
 
 

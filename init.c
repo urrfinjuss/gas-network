@@ -288,8 +288,15 @@ void rescale_data(network *net) {
   }
 }
 
-void save_data(FILE* fh, gpipe_ptr lnk) {
+void save_data(FILE* fh, gpipe_ptr lnk, network* net) {
   if (fh == NULL) err_msg("Cannot write to file.");
+  fprintf(fh, "# 1. x, km 2. P, kPa 3. Flux, kg/m^2/s\n#N = %d\n\n", lnk->N);
+  for (int j = 0; j < lnk->N; j++) {
+    fprintf(fh, "%.15e\t%.15e\t%.15e\n", j*(lnk->L)/((lnk->N)-1), (lnk->p[j])/1000., (lnk->f[j])/(net->c));
+  }
+}
+void save_network(network* net, char* fname) {
+
 }
 
 

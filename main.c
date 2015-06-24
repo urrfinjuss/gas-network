@@ -24,6 +24,8 @@ int main (int argc, char *argv[])
   mgl_init_draw(&syst);
   
   for (int n = 0; n < syst.nlinks; n++){ 
+    sprintf(outdir, "%s/pipe_%03d", cwd, n); 
+    mkdir(outdir, 0777);
     sprintf(outdir, "%s/figures_%03d", cwd, n);
     debug_msg("Saving gas pipe data to:");
     debug_msg(syst.current_dir);
@@ -39,9 +41,6 @@ int main (int argc, char *argv[])
   mkdir(outdir2, 0777);
   sprintf(msg2, "%s/%s_%03d.png", outdir2, syst.dname, 0);
   mgl_draw_network(&syst, msg2, title);
-
-  /*mgl_draw_pressure(&syst, "pressure.png", "");
-  mgl_draw_flux(&syst, "flux.png", "");*/
 
 
   evolve_network(&syst);
