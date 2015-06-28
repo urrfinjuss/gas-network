@@ -11,7 +11,7 @@ int init_network(char *filename, network *net) {
   else while (fgets(line, 80, fh) != NULL) {
     sscanf(line, "%s\t%s", param, value);
     if (strcmp(param,"#name=") == 0) sprintf(net->fname,"%s", value);
-    if (strcmp(param,"#nmatr=") == 0) sprintf(net->matname,"%s", value);
+    if (strcmp(param,"#nincd=") == 0) sprintf(net->incname,"%s", value);
     if (strcmp(param,"#nprof=") == 0) sprintf(net->dname,"%s", value);
     if (strcmp(param,"#nodes=") == 0) net->nnodes = atoi(value);
     if (strcmp(param,"#npts=") == 0) net->npcent = atoi(value);
@@ -26,8 +26,8 @@ int init_network(char *filename, network *net) {
   }
   fclose(fh);
   noise_status(nse);
-  sprintf(msg, "%s net->fname\n%s net->matname\n%s net->dname\n%d net->nnodes\n%d net->npcent\n%d net->nlinks\n", 
-		net->fname, net->matname, net->dname, net->nnodes, net->npcent, net->nlinks);  
+  sprintf(msg, "%s net->fname\n%s net->incname\n%s net->dname\n%d net->nnodes\n%d net->npcent\n%d net->nlinks\n", 
+		net->fname, net->incname, net->dname, net->nnodes, net->npcent, net->nlinks);  
   debug_msg(msg);
 
   return 1;
@@ -35,38 +35,57 @@ int init_network(char *filename, network *net) {
 
 
 void init_links(network *net) {
-   FILE *fh = fopen(net->matname,"r");
-   size_t *nbytes;
-   char line[256], msg[80];
-   int *link_matrix, rnum, m = 0;
-   link_matrix = malloc(sizeof(int)*pow(net->nnodes,2));
-   while(!feof(fh)){
-	rnum = fscanf(fh,"%s", line);
-	while(1){
-          sscanf(line,"%d",&link_matrix[m]);  //reading a single digit
-	  m++;
-          /*Store or use float_num*/                                                              
-          if(strchr(line,' ')) strcpy(line , strchr(line,' ')+1 );  
-            else break;  //exiting once the digits is empty
-        }
-   }
-   sprintf(msg, "Link Matrix %d elements\n", m-1);
-   debug_msg(msg);
+   FILE *fh = fopen(net->incname,"r");
+   size_t count = 1000;
+   char *line = malloc(1000);
+   char msg[80];
+   int rnum, m = 0;
    int nlinks2 = 0;
-   for (int j = 0; j < (net->nnodes)*(net->nnodes); j++) nlinks2 += link_matrix[j];
-   if (nlinks2 != net->nlinks) err_msg("Number of links in the matrix contradicts input file.");
+   double *link_matrix = malloc(sizeof(double)*(net->nnodes)*(net->nnodes));
+
+
+   getline(&line, &count, fh);
+   int read = -1, cur = 0, cCount = 0;
+   while( sscanf(line+cur, "%lf%n", &link_matrix[cCount], &read) == 1) {
+	cur+=read;
+	cCount++;
+   }
+   int rCount = 1;
+   while(getline(&line, &count, fh)!=-1) {
+	rCount++;
+   }
+   rewind(fh);
+   printf("%d\n%d\n%d\n", rCount, cCount, net->nnodes);
+   int i = 0;
+   while(getline(&line, &count, fh)!=-1)
+   {
+     read = -1;
+     cur  =  0;
+     while(sscanf(line+cur, "%lf%n", &link_matrix[i], &read) == 1) {
+	cur+=read;
+	i=i+1;
+     }
+   }
+   fclose(fh);
+   sprintf(msg, "Link Matrix %d elements\n", cCount*rCount);
+   debug_msg(msg);
+
+   for (int j = 0; j < (net->nnodes)*(net->nnodes); j++) {
+	if (link_matrix[j] > 0.) nlinks2 ++;
+   }
+   if (nlinks2 != net->nlinks) err_msg("Number of links in the matrix contradicts input file.\n");
    allocate_memory(net, link_matrix);
    init_arrays(net);
    sprintf(msg, "\nTotal links in network:  %d\n", net->nlinks);
    debug_msg(msg);
-   //err_msg("Complete");	
 }
 
-void allocate_memory(network *net, int *lm) {
+void allocate_memory(network *net, double *lm) {
   char msg[256];
   node_ptr p_k, o_k;
   gpipe_ptr l_p;
-  int l, m, n, rnum;
+  int l, il, ir;
+  //int l, m, n;
   net->knot = malloc(sizeof(node_ptr)*(net->nnodes));
   net->link = malloc(sizeof(gpipe_ptr)*(net->nlinks));
   memset(net->link, 0, (net->nlinks)*sizeof(gpipe_ptr));
@@ -80,81 +99,75 @@ void allocate_memory(network *net, int *lm) {
   for (int i = 0; i < net->nnodes; i++) {
     net->knot[i] = malloc(sizeof(node));
     p_k = net->knot[i];
-    p_k->adj_n = 0;
     p_k->nr = 0;
     p_k->nl = 0;
     for (int j = 0; j < net->nnodes; j++) {
-	(p_k->adj_n) += lm[j*(net->nnodes)+i]+lm[i*(net->nnodes)+j];
-	(p_k->nl) += lm[j*(net->nnodes)+i];
-        (p_k->nr) += lm[i*(net->nnodes)+j];
+	if (lm[j*(net->nnodes)+i] > 0) (p_k->nr)++;
+	if (lm[j*(net->nnodes)+i] < 0) (p_k->nl)++;
     }
-    (net->knot[i])->adj_k = malloc(sizeof(node_ptr)*(p_k->adj_n));
-    //(net->knot[i])->F  = malloc(sizeof(double)*(p_k->adj_n));
-    //(net->knot[i])->W  = malloc(sizeof(double)*(p_k->nr));
-    //(net->knot[i])->Wb = malloc(sizeof(double)*(p_k->nl));
+    (p_k->adj_n) = (p_k->nl) + (p_k->nr);
+    p_k->adj_k = malloc(sizeof(node_ptr)*(p_k->adj_n));
+    p_k->adj_p = malloc(sizeof(gpipe_ptr)*(p_k->adj_n));    
+    memset(p_k->adj_k, 0, (p_k->adj_n)*sizeof(node_ptr));
+    memset(p_k->adj_p, 0, (p_k->adj_n)*sizeof(gpipe_ptr));
+    p_k->outg = &(p_k->adj_p[0]);
+    p_k->incm = &(p_k->adj_p[p_k->nr]);
+    p_k->right = &(p_k->adj_k[0]);
+    p_k->left = &(p_k->adj_k[p_k->nr]);
   }
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
-    l = 0; 
+    il = 0; ir = 0;
     for( int j = 0; j < net->nnodes; j++) {
 	o_k = net->knot[j];
-	if ((lm[j*(net->nnodes)+i]+lm[i*(net->nnodes)+j]) == 1) {
+	/*if (lm[j*(net->nnodes)+i] != 0.) {
 	  p_k->adj_k[l] = o_k;
-	  //(net->knot[i])->adj_k[l] = net->knot[j];
 	  l++;
-	}
-        //p_k->adj_p = malloc(l*sizeof(gpipe_ptr));
-        //(net->knot[j])->adj_p = malloc(l*sizeof(gpipe_ptr));
+	}*/
+	if (lm[j*(net->nnodes)+i] > 0.) {
+	  p_k->right[ir] = o_k;
+	  ir++;
+	} else if (lm[j*(net->nnodes)+i] < 0.) {
+	  p_k->left[il] = o_k;
+	  il++;
+	} 
     }
-    p_k->adj_p = malloc((p_k->adj_n)*sizeof(gpipe_ptr));
-    memset(p_k->adj_p, 0, (p_k->adj_n)*sizeof(gpipe_ptr));
-    sprintf(msg, "Knot %d connected via %d pipes (adj_n adjacent nodes  = %d) at %p\n", i, l, p_k->adj_n, p_k);
+
+    sprintf(msg, "Knot %d address %p\n", i, p_k);
     debug_msg(msg);
-    sprintf(msg, "Knot %d has %d outgoing and %d incoming connections\n", i, p_k->nl, p_k->nr);
+    sprintf(msg, "Knot %d has %d outgoing and %d incoming connections\n", i, p_k->nr, p_k->nl);
     debug_msg(msg);
   }
-  int nlinks = 0;
+
+
+  int idx, nlinks = 0;
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
-    for (int j = 0; j < p_k->adj_n; j++) {
-      //p_k->W[j] = 0.;
-      //p_k->Wb[j] = 0.;
-      //printf("%d of %d\t%p\n", j, p_k->adj_n, net->link[nlinks]);
-      if ((p_k->adj_p[j]) == NULL) {
-	net->link[nlinks] = malloc(sizeof(gpipe));
-	p_k->adj_p[j] = net->link[nlinks];
-	//p_k->adj_p[j] = malloc(sizeof(gpipe));
-        l = 0;
-	while(1) {
-          if ((p_k->adj_k[j])->adj_p[l] == NULL) {
-	    (p_k->adj_k[j])->adj_p[l] = p_k->adj_p[j];
+    for (int j = 0; j < p_k->nr; j++) {
+      o_k = p_k->right[j];
+      p_k->outg[j] = malloc(sizeof(gpipe));
+      net->link[nlinks] = p_k->outg[j];
+      net->link[nlinks]->left = p_k;
 
-
-	    (net->link[nlinks])->left = p_k;
-	    (net->link[nlinks])->right = p_k->adj_k[j];
-		
-	    //((p_k->adj_k[j])->adj_p[l])->left = net->knot[i];
-	    //((p_k->adj_k[j])->adj_p[l])->right = p_k->adj_k[j];
-	    //printf("%p\n", ((p_k->adj_k[j])->adj_p[l])->right);
-            break;
-	  }
-	  l++;
-	}
-	nlinks++;
-      }	
-      sprintf(msg, "Node (%d) at %p connects to node %p via link %p\n", i, p_k, p_k->adj_k[j], p_k->adj_p[j]);
-      debug_msg(msg);
+      idx = 0;
+      while (1) {
+        if ((o_k->incm[idx])== NULL) {
+	  o_k->incm[idx] = p_k->outg[j];
+          net->link[nlinks]->right = o_k;
+	  break;
+	} else idx++;
+      }   
+      nlinks++;
     }
-    debug_msg("\n");
   }
-  sprintf(msg, "Total number of links in the network %d\n", nlinks);
-  debug_msg(msg);
-
   for (int i = 0; i < net->nlinks; i++) {
     l_p = net->link[i];
     sprintf(msg, "Link %2d (%p) left side connected to %p right side to %p\n", i, l_p, l_p->left, l_p->right);
     debug_msg(msg);
   }
+
+  //err_msg("Complete");
+
 
   FILE *fh = fopen(net->nname,"r");
   char *dm;
@@ -214,7 +227,6 @@ void allocate_memory(network *net, int *lm) {
 }
 
 void init_arrays(network *net) {
-  int npts;
   gpipe_ptr p_k;
 
   for (int j = 0; j < net->nlinks; j++) {
@@ -258,7 +270,7 @@ int load_data(FILE *fh, gpipe_ptr lnk) {
   dm = fgets(line, 80, fh);
   dm = fgets(line, 80, fh);
   dm = fgets(line, 80, fh);
-
+  sprintf(msg, "%s", dm);
   int k = 0;
   while (fgets(line, 80, fh) != NULL) {
 	sscanf(line,"%s\t%s\t%s\t%s\n", val0, val1, val2, val3);

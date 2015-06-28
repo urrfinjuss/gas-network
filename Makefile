@@ -2,7 +2,7 @@
 
 C_SRCS= drawing.c aux.c noise.c init.c evolve.c main.c 
 C_OBJS= $(C_SRCS:.c=.o)
-CFLAGS= -L/usr/local/lib/ -std=gnu99 -Ofast -flto
+CFLAGS= -L/usr/local/lib/ -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
 ICFLAGS= -L/usr/local/include
 LDFLAGS= -lgsl -lgslcblas -lmgl -lm
 CC=gcc

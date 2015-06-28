@@ -15,5 +15,5 @@ int noise_status(noise_p *noise) {
   debug_msg("\nNoise parameters:\n\n");
   sprintf(msg, "Tau = %.8e\nL_c = %.8e\nAmp = %.8e\n", noise->tc, noise->lc, noise->A);
   debug_msg(msg);
-
+  return 0;
 }

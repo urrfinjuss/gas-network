@@ -30,8 +30,12 @@ typedef struct gpipe{
 struct node {
   int adj_n;
   int nl, nr;
+  gpipe_ptr *outg;
+  gpipe_ptr *incm;
   gpipe_ptr *adj_p;
   node_ptr *adj_k;
+  node_ptr *left;
+  node_ptr *right;
   double P, F;
   double cratio;
 };
@@ -43,7 +47,8 @@ struct noise_p {
 };
 
 struct network {
-  char fname[80], nname[80], matname[80], dname[80], current_dir[1024];
+  char fname[80], nname[80], dname[80], current_dir[1024];
+  char incname[256];
   int nnodes;
   int nlinks;
   int npcent;
@@ -64,7 +69,7 @@ extern int noise_status(noise_p *noise);
 extern void init_data(network *net);
 extern void init_links(network *net);
 extern void init_arrays(network *net);
-extern void allocate_memory(network *net, int *lm);
+extern void allocate_memory(network *net, double *lm);
 extern void rescale_data(network *net);
 extern int load_data(FILE *fh, gpipe_ptr lnk);
 extern void save_data(FILE* fh, gpipe_ptr lnk, network* net);
@@ -82,11 +87,10 @@ extern void mgl_draw_network(network *net, char* fname, char* title);
 //evolve.c
 extern void init_nodes(network *net);
 extern void init_evolve(network *net);
-extern void hyperbolic_step(network *net);
+extern void hyperbolic_step(network *net, double time);
 extern void nonlinear_hstep(network* net, double dt);
-extern void sync_nodes(network *net);
 extern void evolve_network(network *net);
-extern void split_step2(network *net, double dt);
+extern void split_step2(network *net, double dt, double time);
 
 
 

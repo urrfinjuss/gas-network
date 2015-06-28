@@ -19,7 +19,7 @@ void mgl_init_draw(network *net) {
 }
 
 void mgl_draw_pipe(gpipe_ptr in, network *net, char* fname, char* title) {
-  char str1[80], str2[80];
+  //char str1[80], str2[80];
   
   gr = mgl_create_graph(800,600);
   mgl_data_create(x, in->N, 1, 1);
@@ -56,7 +56,7 @@ void mgl_draw_pipe(gpipe_ptr in, network *net, char* fname, char* title) {
 }
 
 void mgl_draw_network(network *net, char* fname, char* title) {
-  char str1[80], str2[80];
+  //char str1[80], str2[80];
   gpipe_ptr in;
   //gpipe_ptr last = net->link[(net->nlinks)-1];
   gr = mgl_create_graph(1440,800);
@@ -77,14 +77,14 @@ void mgl_draw_network(network *net, char* fname, char* title) {
     
 
     mgl_subplot(gr, net->nlinks, 2, n, "");    
-    mgl_set_ranges(gr, 0, in->L, -10, 10, 0, 0);
+    mgl_set_ranges(gr, 0, in->L, -0.1, 3, 0, 0);
     mgl_axis(gr,"xyz","","");
     mgl_plot_xy(gr, x, p, "b1","");
     mgl_legend(gr, 3, "", "");
     mgl_box(gr);
 
     mgl_subplot(gr, net->nlinks, 2, n+net->nlinks, "");
-    mgl_set_ranges(gr, 0, in->L, -40, 40, 0, 0);
+    mgl_set_ranges(gr, 0, in->L, -0.4, 0.4, 0, 0);
     mgl_axis(gr,"xyz","","");
     mgl_plot_xy(gr, x, m, "b1","");
     mgl_box(gr);
@@ -98,7 +98,7 @@ void mgl_draw_network(network *net, char* fname, char* title) {
 
 
 void mgl_draw_pressure(network *net, char* fname, char* title) {
-  char str1[80], str2[80], msg[80];
+  char msg[80];
   gpipe_ptr in;
   int l, np = 8;   // must be even
   gr = mgl_create_graph(800,600);
@@ -134,7 +134,7 @@ void mgl_draw_pressure(network *net, char* fname, char* title) {
 }
 
 void mgl_draw_flux(network *net, char* fname, char* title) {
-  char str1[80], str2[80], msg[80];
+  char msg[80];
   gpipe_ptr in;
   int l, np = 8;   // must be even
   gr = mgl_create_graph(800,600);
