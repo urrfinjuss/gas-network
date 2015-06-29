@@ -1,4 +1,5 @@
 #include "network.h"
+static double ovsq2, sq2, cs;
 
 int init_network(char *filename, network *net) {
   FILE* fh = fopen(filename,"r");
@@ -6,6 +7,8 @@ int init_network(char *filename, network *net) {
   noise_p *nse = net->noise;
   nse = malloc(sizeof(noise_p));
   strcpy(net->nname, filename);
+  ovsq2 = 1./sqrt(2.);	
+  sq2 = sqrt(2.);
 
   if (fh == NULL) err_msg("Cannot open configuration file.");
   else while (fgets(line, 80, fh) != NULL) {
@@ -25,6 +28,7 @@ int init_network(char *filename, network *net) {
 
   }
   fclose(fh);
+  cs = net->c;
   noise_status(nse);
   sprintf(msg, "%s net->fname\n%s net->incname\n%s net->dname\n%d net->nnodes\n%d net->npcent\n%d net->nlinks\n", 
 		net->fname, net->incname, net->dname, net->nnodes, net->npcent, net->nlinks);  
@@ -85,7 +89,7 @@ void allocate_memory(network *net, double *lm) {
   node_ptr p_k, o_k;
   gpipe_ptr l_p;
   int l, il, ir;
-  //int l, m, n;
+
   net->knot = malloc(sizeof(node_ptr)*(net->nnodes));
   net->link = malloc(sizeof(gpipe_ptr)*(net->nlinks));
   memset(net->link, 0, (net->nlinks)*sizeof(gpipe_ptr));
@@ -120,10 +124,6 @@ void allocate_memory(network *net, double *lm) {
     il = 0; ir = 0;
     for( int j = 0; j < net->nnodes; j++) {
 	o_k = net->knot[j];
-	/*if (lm[j*(net->nnodes)+i] != 0.) {
-	  p_k->adj_k[l] = o_k;
-	  l++;
-	}*/
 	if (lm[j*(net->nnodes)+i] > 0.) {
 	  p_k->right[ir] = o_k;
 	  ir++;
@@ -231,7 +231,7 @@ void init_arrays(network *net) {
 
   for (int j = 0; j < net->nlinks; j++) {
     p_k = net->link[j];	
-    p_k->N = (p_k->L)*(net->npcent);
+    p_k->N = (p_k->L)*(net->npcent)-1;
     p_k->p = malloc((p_k->N)*sizeof(double));
     p_k->f = malloc((p_k->N)*sizeof(double));
     p_k->q = malloc((p_k->N)*sizeof(double));				
@@ -259,7 +259,7 @@ void init_data(network *net) {
 		fclose(fh);
 	}
   }
-  rescale_data(net);
+  //rescale_data(net);
 }
 
 
@@ -272,23 +272,38 @@ int load_data(FILE *fh, gpipe_ptr lnk) {
   dm = fgets(line, 80, fh);
   sprintf(msg, "%s", dm);
   int k = 0;
+  if (fgets(line, 80, fh) != NULL) {
+    sscanf(line,"%s\t%s\t%s\t%s\n", val0, val1, val2, val3);
+    (lnk->left)->P = 1000.*strtod(val1, NULL);
+    (lnk->W_l) = ovsq2*(1000.*strtod(val1, NULL) + strtod(val2, NULL)*cs);
+    (lnk->Wb_l) = ovsq2*(1000.*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+    k = 1;
+  } else err_msg("Error reading input.");
   while (fgets(line, 80, fh) != NULL) {
 	sscanf(line,"%s\t%s\t%s\t%s\n", val0, val1, val2, val3);
-	lnk->p[k] = strtod(val1, NULL);
-	lnk->f[k] = strtod(val2, NULL);
-	lnk->q[k] = strtod(val3, NULL);
 	k++;
-	if (k == lnk->N) {
-	   sprintf(msg, "Read %d lines\n", lnk->N);
+	if (k == lnk->N+2) {
+           (lnk->right)->P = 1000.*strtod(val1, NULL);
+	   (lnk->W_r) = ovsq2*(1000.*strtod(val1, NULL) + strtod(val2, NULL)*cs);
+    	   (lnk->Wb_r) = ovsq2*(1000.*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+	   sprintf(msg, "Read %d lines\n", lnk->N+2);
 	   debug_msg(msg);
 	   break;
 	}
+	lnk->p[k-2] = 1000.*strtod(val1, NULL);
+	lnk->f[k-2] = strtod(val2, NULL)*cs;
+	lnk->q[k-2] = strtod(val3, NULL);
+
   }
-  if (k != lnk->N) return 1;
+  /*printf("Left: W = %e\tWb = %e\n", lnk->W_l, lnk->Wb_l);
+  for (int j = 0; j < lnk->N; j++) printf("%2d of %d: W = %e\tWb = %e\n", j, lnk->N, ovsq2*(lnk->p[j] + lnk->f[j]), ovsq2*(lnk->p[j] + lnk->f[j]));
+  printf("Right: W = %e\tWb = %e\n", lnk->W_r, lnk->Wb_r);
+  err_msg("");*/
+  if (k != lnk->N+2) return 1;
   else return 0;
 }
 
-void rescale_data(network *net) {
+/*void rescale_data(network *net) {
   gpipe_ptr p_k;
   for (int j = 0; j < net->nlinks; j++) {
     p_k = net->link[j];
@@ -298,14 +313,16 @@ void rescale_data(network *net) {
       p_k->q[k] = p_k->q[k];
     }
   }
-}
+}*/
 
 void save_data(FILE* fh, gpipe_ptr lnk, network* net) {
   if (fh == NULL) err_msg("Cannot write to file.");
-  fprintf(fh, "# 1. x, km 2. P, kPa 3. Flux, kg/m^2/s\n#N = %d\n\n", lnk->N);
+  fprintf(fh, "# 1. x, km 2. P, kPa 3. Flux, kg/m^2/s\n# N = %d\n\n", lnk->N+2);
+  fprintf(fh, "%.15e\t%.15e\t%.15e\n", 0., ovsq2*(lnk->W_l + lnk->Wb_l)/1000., ovsq2*(lnk->W_l - lnk->Wb_l)/(net->c)); 
   for (int j = 0; j < lnk->N; j++) {
-    fprintf(fh, "%.15e\t%.15e\t%.15e\n", j*(lnk->L)/((lnk->N)-1), (lnk->p[j])/1000., (lnk->f[j])/(net->c));
+    fprintf(fh, "%.15e\t%.15e\t%.15e\n", (j+1)*(lnk->L)/((lnk->N)+1), (lnk->p[j])/1000., (lnk->f[j])/(net->c));
   }
+  fprintf(fh, "%.15e\t%.15e\t%.15e\n", lnk->L, ovsq2*(lnk->W_r + lnk->Wb_r)/1000., ovsq2*(lnk->W_r - lnk->Wb_r)/(net->c)); 
 }
 void save_network(network* net, char* fname) {
 

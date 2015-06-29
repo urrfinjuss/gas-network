@@ -66,15 +66,20 @@ void mgl_draw_network(network *net, char* fname, char* title) {
   mgl_add_legend(gr, title,"");
   for (int n = 0; n < net->nlinks; n++) {   	
     in = net->link[n];
-    mgl_data_create(x, in->N, 1, 1);
-    mgl_data_create(p, in->N, 1, 1);
-    mgl_data_create(m, in->N, 1, 1);
+    mgl_data_create(x, in->N+2, 1, 1);
+    mgl_data_create(p, in->N+2, 1, 1);
+    mgl_data_create(m, in->N+2, 1, 1);
+    mgl_data_set_value(x, 0, 0, 0, 0);
+    mgl_data_set_value(p, 0.001*(in->W_l + in->Wb_l)/sqrt(2.), 0, 0, 0);
+    mgl_data_set_value(m, (in->W_l - in->Wb_l)/sqrt(2.)/cs, 0, 0, 0);
     for (int k = 0; k < in->N; k++) {
-       mgl_data_set_value(x, (in->L)*k/(in->N - 1.), k, 0, 0);
-       mgl_data_set_value(p, 0.001*(in->p[k]), k, 0, 0);
-       mgl_data_set_value(m, (in->f[k])/cs, k, 0, 0);
+       mgl_data_set_value(x, (in->L)*(k+1)/(in->N + 1), k+1, 0, 0);
+       mgl_data_set_value(p, 0.001*(in->p[k]), k+1, 0, 0);
+       mgl_data_set_value(m, (in->f[k])/cs, k+1, 0, 0);
     }
-    
+    mgl_data_set_value(x, in->L, in->N+1, 0, 0);
+    mgl_data_set_value(p, 0.001*(in->W_r + in->Wb_r)/sqrt(2.), in->N+1, 0, 0);
+    mgl_data_set_value(m, (in->W_r - in->Wb_r)/sqrt(2.)/cs, in->N+1, 0, 0);
 
     mgl_subplot(gr, net->nlinks, 2, n, "");    
     mgl_set_ranges(gr, 0, in->L, -0.1, 3, 0, 0);
