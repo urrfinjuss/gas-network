@@ -1,5 +1,6 @@
 #include "network.h"
 static double ovsq2, sq2, cs;
+//static compressor_ptr cssr;
 
 int init_network(char *filename, network *net) {
   FILE* fh = fopen(filename,"r");
@@ -17,6 +18,9 @@ int init_network(char *filename, network *net) {
     if (strcmp(param,"#nincd=") == 0) sprintf(net->incname,"%s", value);
     if (strcmp(param,"#nprof=") == 0) sprintf(net->dname,"%s", value);
     if (strcmp(param,"#nodes=") == 0) net->nnodes = atoi(value);
+    if (strcmp(param,"#ncmps=") == 0) net->ncomps = atoi(value);
+    if (strcmp(param,"#drawpng=") == 0) net->mglf = atoi(value);
+    if (strcmp(param,"#skipnum=") == 0) net->nskip = atoi(value);
     if (strcmp(param,"#npts=") == 0) net->npcent = atoi(value);
     if (strcmp(param,"#links=") == 0) net->nlinks = atoi(value);
     if (strcmp(param,"#corr_time=") == 0) nse->tc = atof(value);
@@ -121,6 +125,7 @@ void allocate_memory(network *net, double *lm) {
   }
   for (int i = 0; i < net->nnodes; i++) {
     p_k = net->knot[i];
+    p_k->key = i;
     il = 0; ir = 0;
     for( int j = 0; j < net->nnodes; j++) {
 	o_k = net->knot[j];
@@ -162,6 +167,8 @@ void allocate_memory(network *net, double *lm) {
   }
   for (int i = 0; i < net->nlinks; i++) {
     l_p = net->link[i];
+    l_p->key = i;
+    l_p->c_id = NULL;
     sprintf(msg, "Link %2d (%p) left side connected to %p right side to %p\n", i, l_p, l_p->left, l_p->right);
     debug_msg(msg);
   }
@@ -224,6 +231,28 @@ void allocate_memory(network *net, double *lm) {
     }
   }
   fclose(fh);
+  fh = fopen(net->fname,"r");
+  for (int j = 0; j < net->nlinks+net->nnodes+1; j++) dm = fgets(msg, 256, fh);
+  net->cssr = malloc(sizeof(compressor)*net->ncomps);
+  int key[net->ncomps], dummy;
+  for (int j = 0; j < net->ncomps; j++) {
+	dm = fgets(msg, 256, fh);
+	for (int l = 0; l < 5; l++) {
+	  dummy = strtol(dm, &dm, 10);
+	  if (l == 2) key[j] = dummy;
+	}
+  }
+  
+  for (int m = 0; m < net->ncomps; m++) {
+    for (int j = 0; j < net->nlinks; j++) {
+      l_p = net->link[j];
+      if ((l_p->key) == key[m]) {
+        l_p->c_id = &(net->cssr[m]);
+	sprintf(msg2, "Added Compressor %p to link %d (%p)\n", &(net->cssr[m]), key[m], l_p);
+	debug_msg(msg2);
+      }
+    }
+  }
 }
 
 void init_arrays(network *net) {
@@ -247,11 +276,12 @@ void init_data(network *net) {
 	//debug_msg(str);
 	fh = fopen(str, "r");
 	if (fh == NULL) {
-		sprintf(str, "Missing initial data along pipe %d, %d points expected\n", j, (net->link[j])->N);
+		sprintf(str, "Missing initial data along pipe %d, %d points expected\n", j, (net->link[j])->N  + 2);
 		debug_msg(str);
+		err_msg("Complete");
 	} else {
 		if (load_data(fh, net->link[j])) {
-		   sprintf(msg, "Data for pipe %d has wrong number of lines.\n%d data points expected\n", j, (net->link[j])->N);
+		   sprintf(msg, "Data for pipe %d has wrong number of lines.\n%d data points expected\n", j, (net->link[j])->N + 2);
 		   printf("%s", msg);
 		   fclose(fh);
 		   err_msg("Complete");

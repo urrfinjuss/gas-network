@@ -21,6 +21,7 @@ int main (int argc, char *argv[])
   init_links(&syst);
   init_data(&syst);
   init_evolve(&syst);
+  init_compressors(&syst);
   mgl_init_draw(&syst);
   
   for (int n = 0; n < syst.nlinks; n++){ 

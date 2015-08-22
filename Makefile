@@ -1,6 +1,6 @@
 # Makefile for building C stuff with GSL
 
-C_SRCS= drawing.c aux.c noise.c init.c evolve.c main.c 
+C_SRCS= drawing.c aux.c noise.c init.c evolve.c main.c bc.c
 C_OBJS= $(C_SRCS:.c=.o)
 CFLAGS= -L/usr/local/lib/ -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
 ICFLAGS= -L/usr/local/include
@@ -24,6 +24,9 @@ evolve.o: evolve.c network.h
 
 main.o: main.c network.h
 	$(CC) $(CFLAGS) -c main.c $(LDFLAGS)
+
+bc.o:	bc.c network.h
+	$(CC) $(CFLAGS) -c bc.c $(LDFLAGS)
 
 simulate: $(C_OBJS)
 	$(CC) $(CFLAGS) -o simulate.x $(C_OBJS) $(LDFLAGS)

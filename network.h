@@ -11,23 +11,27 @@
 
 
 #define DEBUGMODE 1
+#define pi 2*acos(0)
 
 typedef struct network network;
 typedef struct node node, *node_ptr;
 typedef struct noise_p noise_p;
+typedef struct compressor compressor, *compressor_ptr;
 typedef struct gpipe{
   double L;
   double d;
   double W_l, Wb_r; // characteristics required to update pipe
   double Wb_l, W_r; // characteristics required to update node
-  int N;
+  int N, key;
   int BCflag;
   node_ptr left;
   node_ptr right;
   double *f, *p, *q;
+  compressor_ptr c_id;
 } gpipe, *gpipe_ptr;
 
 struct node {
+  int key;
   int adj_n;
   int nl, nr;
   gpipe_ptr *outg;
@@ -37,6 +41,12 @@ struct node {
   node_ptr *left;
   node_ptr *right;
   double P, F;
+  double cratio;
+};
+
+struct compressor {
+  node_ptr position;
+  gpipe_ptr tp;
   double cratio;
 };
 
@@ -51,11 +61,15 @@ struct network {
   char incname[256];
   int nnodes;
   int nlinks;
+  int ncomps;
   int npcent;
+  int mglf;
+  int nskip;
   double c, diss, tmax;
   noise_p *noise;
   node_ptr *knot;
-  gpipe_ptr *link; 
+  gpipe_ptr *link;
+  compressor_ptr cssr;
 };
 
 // aux.c
@@ -91,6 +105,10 @@ extern void hyperbolic_step(network *net, double time);
 extern void nonlinear_hstep(network* net, double dt);
 extern void evolve_network(network *net);
 extern void split_step2(network *net, double dt, double time);
+extern void anatoly_bc(network *net, double time);
+
+//bc.c
+extern void init_compressors(network *net);
 
 
 

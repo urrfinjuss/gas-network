@@ -26,6 +26,7 @@ void init_evolve(network *net) {
     w[k]  = malloc(sizeof(double)*(p_k->N));
     wb[k] = malloc(sizeof(double)*(p_k->N));
   }
+  anatoly_bc(net, 0.);
 }
 
 void split_step2(network *net, double dt, double time) {
@@ -63,6 +64,94 @@ void nonlinear_hstep(network* net, double dt) {
 }
 
 
+void anatoly_bc(network *net, double time) {
+  //s(t) = 4500.(1 + 0.1*sin(6*pi*t/T));  pressure
+  //d(t) = cs*289.*(1+0.1*sin(4*pi*t/T)); flux
+  double T = 12*3600;
+  double s = 6500000, Q;
+  
+  s = 6500000.*(0.85 + 0.15*sin(8*pi*time/T));
+  //d = (net->c)*289.*(1+0.1*sin(4*pi*time/T));
+
+  n_k = net->knot[0];
+  p_k = net->link[0];  
+  n_k->P = s;
+  n_k->F = n_k->P - sq2*(p_k->Wb_l);
+  p_k->W_l = ovsq2*(s + n_k->F);
+
+
+  int Ind = 5;
+
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./4*(1+8.*sin(256*pi*time/T));
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 7;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./4;
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 11;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./8*(1+4.*sin(128*pi*time/T));
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 12;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./8*(1+8.*sin(1024*pi*time/T));
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 17;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./16;
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 18;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./16*(1+8.*sin(512*pi*time/T));
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 23;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./16;
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+  Ind = 24;
+  n_k = net->knot[Ind];
+  p_k = (net->knot[Ind])->incm[0];
+  Q = (net->c)*289./16*(1+4.*sin(256*pi*time/T));
+  n_k->P = sq2*(p_k->W_r) - Q;
+  p_k->Wb_r = ovsq2*(n_k->P - Q);
+
+
+  //printf("Wl = %e\tWbl = %e\n", p_k->W_l, p_k->Wb_l);
+
+
+  /*n_k = net->knot[1];
+  p_k = net->link[0];  
+  n_k->F = d;
+  n_k->P = sq2*(p_k->W_r) - n_k->F;
+  p_k->Wb_r = ovsq2*(n_k->P - n_k->F);*/
+  
+  //printf("Left After: %e\t%e\n", p_k->W_l, p_k->Wb_l);  
+  //printf("Right After: %e\t%e\n", ovsq2*(p_k->W_r+p_k->Wb_r), ovsq2*(p_k->W_r-p_k->Wb_r)/(net->c));    
+
+}
+
 void update_bc(network *net, double time) {
   //  Update of BC below
   for (int j = 0; j < net->nnodes; j++) {
@@ -99,7 +188,8 @@ void update_bc(network *net, double time) {
   // Override to have influx at node 0
   /*n_k = net->knot[0]; 
   n_k->P = 0.; 
-  Q = 0.; //150.*(1. - 1./cosh(a*time))*sin(a*time); 
+  Q = 289.*(1. - 1./cosh(a*time))*sin(a*time); 
+  //Q = 289.;
   for (int l = 0; l < n_k->nr; l++) {
       //printf("%p\n", n_k->outg[l]);
       p_k = n_k->outg[l];
@@ -123,12 +213,12 @@ void update_bc(network *net, double time) {
       p_k = n_k->incm[l];
       n_k->F = sq2*(p_k->W_r) - n_k->P;
       p_k->Wb_r = ovsq2*(n_k->P - n_k->F);
-  }*/
+  }
 
-
-  /*n_k = net->knot[3]; 
+  
+  n_k = net->knot[3]; 
   n_k->P = 0.; 
-  Q = 0.; // -150.*(1. - 1./cosh(a*time))*cos(a*time); 
+  Q = -289.*(1. - 1./cosh(a*time))*cos(a*time); 
   for (int l = 0; l < n_k->nr; l++) {
       //printf("%p\n", n_k->outg[l]);
       p_k = n_k->outg[l];
@@ -158,6 +248,7 @@ void update_bc(network *net, double time) {
 
 
 void hyperbolic_step(network *net, double time) {
+  //printf("Here\n");
   for (int k = 0; k < Nl; k++) {
     tl = Np[k]-1;
     p_k = net->link[k];
@@ -166,15 +257,10 @@ void hyperbolic_step(network *net, double time) {
       wb[k][j] = (p_k->p[j] - p_k->f[j])*ovsq2;
     }    
     // taking values from characteristics coming from nodes [time (+0)]
-    //printf("Link %d: W_l = %e\t w[0] = %e\tw[1] = %e\tWb_l = %e\twb[0] = %e\twb[1] = %e\twb[2] = %e\n",k, p_k->W_l,
-    //				 w[k][0], w[k][1], p_k->Wb_l, wb[k][0], wb[k][1], wb[k][2]);
-
-
     // updating characteristics going into the nodes [time (+1)]
     p_k->W_r = w[k][Np[k]-1];
     p_k->Wb_l = wb[k][0];
     // finished collecting required values from outgoing characteristics
-    //printf("Link %d: w[0] = %e\twb[2] = %e\n", k, w[k][0], wb[k][2]);   // w[k][0] is wrong value
     memmove( w[k]+1,  w[k], sizeof(double)*(Np[k]-1));
     w[k][0] = p_k->W_l;  
     memmove(wb[k], wb[k]+1, sizeof(double)*(Np[k]-1));
@@ -184,77 +270,56 @@ void hyperbolic_step(network *net, double time) {
       p_k->p[j] = (w[k][j] + wb[k][j])*ovsq2;
       p_k->f[j] = (w[k][j] - wb[k][j])*ovsq2;
     }
-
   }
   update_bc(net, time);
-
-  /*
-  //  Update of BC below
-  for (int j = 0; j < net->nnodes; j++) {
-    n_k = net->knot[j];
-    n_k->P = 0.;
-    for (int l = 0; l < n_k->adj_n; l++) {
-      p_k = n_k->adj_p[l];
-      if (p_k->left == n_k) {            // means left side of pipe p_k is connected to node j
-        n_k->P += p_k->Wb_l;
-      } 
-      else if ( p_k->right == n_k ) {
-	n_k->P += p_k->W_r;
-      } else {
-        err_msg("Error in network construction");
-      }
-    }
-    n_k->P = sq2*(n_k->P)/(n_k->adj_n);
-    for (int l = 0; l < n_k->adj_n; l++) {
-      p_k = n_k->adj_p[l];
-      if (p_k->left == n_k) {            // means left side of pipe p_k is connected to node j
-	n_k->F = n_k->P - sq2*(p_k->Wb_l);
-	p_k->W_l = ovsq2*(n_k->P + n_k->F);
-      } 
-      else if ( p_k->right == n_k ) {
-	n_k->F = sq2*(p_k->W_r) - n_k->P;
-	p_k->Wb_r = ovsq2*(n_k->P - n_k->F);
-      } else {
-        err_msg("Error in network construction");
-      }
-    }
-  }
-  //  End Update
-  */
+  anatoly_bc(net, time);
 }
 
 
 void evolve_network(network *net) {
-  FILE *fh;
+  FILE *fh, *fhtime;
   char msg[1024], outdir[1024], msg2[80];
   double dx = 1000./(net->npcent);
   double dt = dx/(net->c);  			// physical time-step (seconds)
-  //int n_steps = round((net->tmax)/dt);
-  int n_steps = 50;
-  int n_skip = 1;
+  int n_steps = round((net->tmax)/dt);
+  //int n_steps = 50;
+  int n_skip = net->nskip;
   int n_curr = 0;
   printf("Simulating network for %f hours\nTime step is %f (in secs)\nTotal steps %d\n", (net->tmax)/3600., dt, n_steps);
+  fhtime = fopen("params.txt","w");
+  fprintf(fhtime, "# 1. time, hours 2. Pressure, kPa (Left) 3. Flux, kg/m^2/s(Right)\n\n");
+  fclose(fhtime);
   while (1) {
-    split_step2(net, dx, n_curr*dt);  // note we use dtau = dx here!
+    split_step2(net, dx, n_curr*dt);  // note (dx = dtau)
     n_curr++;
     if (n_curr % n_skip == 0) {
-      printf("t = %.3f sec\n", n_curr*dt);
+      printf("t = %.3f min\n", n_curr*dt/60.);
+      fhtime = fopen("params.txt", "a");
+      fprintf(fhtime, "%e\t%e\t%e\n", n_curr*dt/3600., ((net->knot[1])->P)*0.001, ovsq2*((net->link[0])->W_l - (net->link[0])->Wb_l)/(net->c) );
+      fclose(fhtime);
       for (int n = 0; n < net->nlinks; n++){ 
-        sprintf(outdir, "%s/figures_%03d", net->current_dir, n);
+        /*sprintf(outdir, "%s/figures_%03d", net->current_dir, n);
         sprintf(msg, "%s/%s_%03d.png", outdir, net->dname, n_curr/n_skip);
         sprintf(msg2, "t = %.3f sec", n_curr*dt);
-        //mgl_draw_pipe(net->link[n], net, msg, msg2);
+        mgl_draw_pipe(net->link[n], net, msg, msg2);*/
         sprintf(msg, "%s/pipe_%03d/%s_%03d.txt", net->current_dir, n, net->dname, n_curr/n_skip);
         fh = fopen(msg, "w");
 	save_data(fh, net->link[n], net);
         fclose(fh);
       }
-      sprintf(outdir, "%s/network", net->current_dir);
-      sprintf(msg, "%s/%s_%03d.png", outdir, net->dname, n_curr/n_skip);
-      mgl_draw_network(net, msg, msg2);
+      if (net->mglf != 0) {
+        sprintf(outdir, "%s/network", net->current_dir);
+        sprintf(msg, "%s/%s_%03d.png", outdir, net->dname, n_curr/n_skip);
+        sprintf(msg2, "t = %.3f sec", n_curr*dt);
+        mgl_draw_network(net, msg, msg2);
+      }
     }
     if (n_curr == n_steps) break; 
   }
+  printf("t = %.3f min\n", n_curr*dt/60.);
+  fhtime = fopen("params.txt", "a");
+  fprintf(fhtime, "%e\t%e\t%e\n", n_curr*dt/3600., ((net->knot[1])->P)*0.001, ovsq2*((net->link[0])->W_l - (net->link[0])->Wb_l)/(net->c) );
+  fclose(fhtime);
 }
 
 

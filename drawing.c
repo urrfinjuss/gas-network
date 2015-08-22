@@ -59,7 +59,7 @@ void mgl_draw_network(network *net, char* fname, char* title) {
   //char str1[80], str2[80];
   gpipe_ptr in;
   //gpipe_ptr last = net->link[(net->nlinks)-1];
-  gr = mgl_create_graph(1440,800);
+  gr = mgl_create_graph(1920,800);
 
   //mgl_data_create(q, in->N, 1, 1);
   //mgl_title(gr, "Network", "#", -2);
@@ -82,14 +82,14 @@ void mgl_draw_network(network *net, char* fname, char* title) {
     mgl_data_set_value(m, (in->W_r - in->Wb_r)/sqrt(2.)/cs, in->N+1, 0, 0);
 
     mgl_subplot(gr, net->nlinks, 2, n, "");    
-    mgl_set_ranges(gr, 0, in->L, -0.1, 3, 0, 0);
+    mgl_set_ranges(gr, 0, in->L, -1, 7400, 0, 0);
     mgl_axis(gr,"xyz","","");
     mgl_plot_xy(gr, x, p, "b1","");
     mgl_legend(gr, 3, "", "");
     mgl_box(gr);
 
     mgl_subplot(gr, net->nlinks, 2, n+net->nlinks, "");
-    mgl_set_ranges(gr, 0, in->L, -0.4, 0.4, 0, 0);
+    mgl_set_ranges(gr, 0, in->L, 0, 450, 0, 0);
     mgl_axis(gr,"xyz","","");
     mgl_plot_xy(gr, x, m, "b1","");
     mgl_box(gr);
