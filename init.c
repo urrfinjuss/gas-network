@@ -6,7 +6,7 @@ int init_network(char *filename, network *net) {
   FILE* fh = fopen(filename,"r");
   char line[80], param[80], value[80], msg[256];
   noise_p *nse = net->noise;
-  nse = malloc(sizeof(noise_p));
+  net->nse = malloc(sizeof(noise_p));
   strcpy(net->nname, filename);
   ovsq2 = 1./sqrt(2.);	
   sq2 = sqrt(2.);
@@ -23,17 +23,19 @@ int init_network(char *filename, network *net) {
     if (strcmp(param,"#skipnum=") == 0) net->nskip = atoi(value);
     if (strcmp(param,"#npts=") == 0) net->npcent = atoi(value);
     if (strcmp(param,"#links=") == 0) net->nlinks = atoi(value);
-    if (strcmp(param,"#corr_time=") == 0) nse->tc = atof(value);
-    if (strcmp(param,"#corr_dist=") == 0) nse->lc = atof(value);
-    if (strcmp(param,"#amplitude=") == 0) nse->A = atof(value);
+    if (strcmp(param,"#corr_time=") == 0) (net->nse)->tau = atof(value);
+    if (strcmp(param,"#corr_dist=") == 0) (net->nse)->lc = atof(value);
+    if (strcmp(param,"#amplitude=") == 0) (net->nse)->A = atof(value);
     if (strcmp(param,"#sound_speed=") == 0) net->c = atof(value);
-    if (strcmp(param,"#dissip_coef=") == 0) net->diss = atof(value);
+    if (strcmp(param,"#dissip_coef=") == 0) net->diss = atof(value);	
+    //if (strcmp(param,"#distr_gamma=") == 0) net->gamma = atof(value);
+    if (strcmp(param,"#fix_pressure=") == 0) net->LFLAG = atoi(value);
     if (strcmp(param,"#simul_time=") == 0) net->tmax = 3600.*atof(value);
 
   }
   fclose(fh);
   cs = net->c;
-  noise_status(nse);
+  noise_status(net->nse);
   sprintf(msg, "%s net->fname\n%s net->incname\n%s net->dname\n%d net->nnodes\n%d net->npcent\n%d net->nlinks\n", 
 		net->fname, net->incname, net->dname, net->nnodes, net->npcent, net->nlinks);  
   debug_msg(msg);
@@ -89,11 +91,12 @@ void init_links(network *net) {
 }
 
 void allocate_memory(network *net, double *lm) {
-  char msg[256];
+  char msg[1024];
   node_ptr p_k, o_k;
   gpipe_ptr l_p;
   int l, il, ir;
 
+  printf("Allocate Mem started\n");
   net->knot = malloc(sizeof(node_ptr)*(net->nnodes));
   net->link = malloc(sizeof(gpipe_ptr)*(net->nlinks));
   memset(net->link, 0, (net->nlinks)*sizeof(gpipe_ptr));
@@ -183,9 +186,9 @@ void allocate_memory(network *net, double *lm) {
   debug_msg(net->nname);
   debug_msg("\n");
   while(1) {
-    if(fgets(msg, 256, fh)==NULL) break;
+    if(fgets(msg, 1024, fh)==NULL) break;
     if( strcmp(msg, "#lengths\n")==0) {
-	dm = fgets(msg, 256, fh);
+	dm = fgets(msg, 1024, fh);
         sprintf(msg2, "Found pipe lengths\n");
 	debug_msg(msg2);
 	debug_msg(msg);
@@ -200,7 +203,7 @@ void allocate_memory(network *net, double *lm) {
 	}
     }
     if( strcmp(msg, "#diameters\n")==0) {
-	dm = fgets(msg, 256, fh);
+	dm = fgets(msg, 1024, fh);
         sprintf(msg2, "Found pipe diameters\n");
 	debug_msg(msg2);
 	debug_msg(msg);
@@ -215,7 +218,7 @@ void allocate_memory(network *net, double *lm) {
 	}
     }
     if( strcmp(msg, "#compressions\n")==0) {
-	dm = fgets(msg, 256, fh);
+	dm = fgets(msg, 1024, fh);
         sprintf(msg2, "Found compressions in nodes\n");
 	debug_msg(msg2);
 	debug_msg(msg);
@@ -230,19 +233,22 @@ void allocate_memory(network *net, double *lm) {
 	}
     }
   }
+
+  printf("Generating Compressor Data\n");
   fclose(fh);
   fh = fopen(net->fname,"r");
-  for (int j = 0; j < net->nlinks+net->nnodes+1; j++) dm = fgets(msg, 256, fh);
+  for (int j = 0; j < net->nlinks+net->nnodes+1; j++) dm = fgets(msg, 1024, fh);
   net->cssr = malloc(sizeof(compressor)*net->ncomps);
   int key[net->ncomps], dummy;
+  printf("Compressors: %d\n", net->ncomps);
   for (int j = 0; j < net->ncomps; j++) {
-	dm = fgets(msg, 256, fh);
+	dm = fgets(msg, 1024, fh);
+	printf("Comp %d: %s -> %s", j, net->fname, msg);
 	for (int l = 0; l < 5; l++) {
 	  dummy = strtol(dm, &dm, 10);
 	  if (l == 2) key[j] = dummy;
 	}
   }
-  
   for (int m = 0; m < net->ncomps; m++) {
     for (int j = 0; j < net->nlinks; j++) {
       l_p = net->link[j];
@@ -253,6 +259,7 @@ void allocate_memory(network *net, double *lm) {
       }
     }
   }
+  printf("Compressor Data Passed\n");
 }
 
 void init_arrays(network *net) {
@@ -263,14 +270,18 @@ void init_arrays(network *net) {
     p_k->N = (p_k->L)*(net->npcent)-1;
     p_k->p = malloc((p_k->N)*sizeof(double));
     p_k->f = malloc((p_k->N)*sizeof(double));
-    p_k->q = malloc((p_k->N)*sizeof(double));				
+    p_k->q = malloc((p_k->N)*sizeof(double));
+    p_k->gamma = malloc((p_k->N)*sizeof(double));		
+    p_k->fx = malloc((p_k->N)*sizeof(fftw_complex));
+    //printf("Expected data points for pipe %d is %d\n", j, p_k->N);							
   }
 
 }
 
 void init_data(network *net) {
-  char str[256], msg[256];
+  char str[1024], msg[1024];
   FILE *fh;
+  //printf("Init Data started\n");
   for (int j = 0; j < net->nlinks; j++) {
 	sprintf(str, "%s_%03d.txt", net->dname, j);
 	//debug_msg(str);
@@ -280,57 +291,121 @@ void init_data(network *net) {
 		debug_msg(str);
 		err_msg("Complete");
 	} else {
+		printf("Link %03d:\t", j);
 		if (load_data(fh, net->link[j])) {
 		   sprintf(msg, "Data for pipe %d has wrong number of lines.\n%d data points expected\n", j, (net->link[j])->N + 2);
-		   printf("%s", msg);
+		   //printf("%s", msg);
 		   fclose(fh);
 		   err_msg("Complete");
  		}
+		printf("Interior points loaded. Loading Boundary ...\t");
+		if ( j==0 ) {
+			if (net->link[j]->c_id == NULL) {
+				net->P0 = ovsq2*((net->link[j])->W_l + (net->link[j])->Wb_l);
+				net->F0 = (net->link[0])->Fl;
+			} else {
+				net->P0 = ovsq2*((net->link[j])->W_l + (net->link[j])->Wb_l)/(net->link[j]->c_id->cratio);	
+				net->F0 = (net->link[0])->Fl;
+			}
+		}
 		fclose(fh);
+		printf("Done\n");
 	}
   }
+
+  printf("Load Data Complete: Left Flux is %.12e\n", net->F0/cs);
+  //net->P0 = (net->link[0])->Pl;
   //rescale_data(net);
+  //printf("Init Data passed\n");
+  //exit(1);
 }
 
 
 int load_data(FILE *fh, gpipe_ptr lnk) {
-  char line[256], val0[64], val1[64], val2[64], val3[64];
+  char line[512], val0[64], val1[64], val2[64], val3[64];
   char msg[80];
   char *dm;
-  dm = fgets(line, 80, fh);
-  dm = fgets(line, 80, fh);
-  dm = fgets(line, 80, fh);
+  dm = fgets(line, 512, fh);
+  dm = fgets(line, 512, fh);
+  dm = fgets(line, 512, fh);
   sprintf(msg, "%s", dm);
   int k = 0;
-  if (fgets(line, 80, fh) != NULL) {
+  if (fgets(line, 512, fh) != NULL) {
     sscanf(line,"%s\t%s\t%s\t%s\n", val0, val1, val2, val3);
-    (lnk->left)->P = 1000.*strtod(val1, NULL);
-    (lnk->W_l) = ovsq2*(1000.*strtod(val1, NULL) + strtod(val2, NULL)*cs);
-    (lnk->Wb_l) = ovsq2*(1000.*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+    //printf("%s\t %p\n", line, lnk->c_id);
+
+    //(lnk->left)->F = strtod(val2, NULL)*cs;  // dumb
+
+
+    (lnk->W_l) = ovsq2*(1e6*strtod(val1, NULL) + strtod(val2, NULL)*cs);
+    (lnk->Wb_l) = ovsq2*(1e6*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+
+    if (lnk->c_id != NULL) {
+       (lnk->left)->P = 1e6*strtod(val1, NULL)/(lnk->c_id)->cratio;
+       (lnk->W_l) = ovsq2*(1e6*strtod(val1, NULL) + strtod(val2, NULL)*cs);
+       (lnk->Wb_l) = ovsq2*(1e6*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+       //printf("c = %.12e\nP = %.12e\n",(lnk->c_id)->cratio, (lnk->left)->P);  
+    } else {
+       (lnk->left)->P = 1e6*strtod(val1, NULL);
+       (lnk->W_l) = ovsq2*(1e6*strtod(val1, NULL) + strtod(val2, NULL)*cs);
+       (lnk->Wb_l) = ovsq2*(1e6*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+    }
+    (lnk->left)->G = pow(strtod(val2, NULL)*cs/(1e6*strtod(val1, NULL)), 2);
+#if ZERO_GAMMA
+    (lnk->left)->G = 0.;
+#endif
+    lnk->Fl = strtod(val2, NULL)*cs;	     // better
+    (lnk->left)->Q = strtod(val3, NULL)*cs;
+    //printf("%.15e\n",lnk->left->F);
     k = 1;
   } else err_msg("Error reading input.");
-  while (fgets(line, 80, fh) != NULL) {
+  while (fgets(line, 512, fh) != NULL) {
 	sscanf(line,"%s\t%s\t%s\t%s\n", val0, val1, val2, val3);
 	k++;
-	if (k == lnk->N+2) {
-           (lnk->right)->P = 1000.*strtod(val1, NULL);
-	   (lnk->W_r) = ovsq2*(1000.*strtod(val1, NULL) + strtod(val2, NULL)*cs);
-    	   (lnk->Wb_r) = ovsq2*(1000.*strtod(val1, NULL) - strtod(val2, NULL)*cs);
-	   sprintf(msg, "Read %d lines\n", lnk->N+2);
+	if (k == (lnk->N+2)) {
+           (lnk->right)->P = 1e6*strtod(val1, NULL);
+           lnk->Fr = strtod(val2, NULL)*cs;
+           (lnk->right)->Q = strtod(val3, NULL)*cs;
+	   printf("element %d of %d", k-2, lnk->N);
+	   (lnk->right)->G = pow(strtod(val2, NULL)*cs/(1e6*strtod(val1, NULL)), 2);
+#if ZERO_GAMMA 
+	   (lnk->right)->G = 0.;
+#endif
+	   (lnk->W_r) = ovsq2*(1e6*strtod(val1, NULL) + strtod(val2, NULL)*cs);
+    	   (lnk->Wb_r) = ovsq2*(1e6*strtod(val1, NULL) - strtod(val2, NULL)*cs);
+	   sprintf(msg, "Read %d(%d) lines\n", k, lnk->N+2);
 	   debug_msg(msg);
 	   break;
 	}
-	lnk->p[k-2] = 1000.*strtod(val1, NULL);
+	lnk->p[k-2] = 1e6*strtod(val1, NULL);
 	lnk->f[k-2] = strtod(val2, NULL)*cs;
-	lnk->q[k-2] = strtod(val3, NULL);
-
+	lnk->gamma[k-2] = pow(lnk->f[k-2]/lnk->p[k-2], 2);  // 
+	lnk->q[k-2] = strtod(val3, NULL)*cs;
+	//printf("%.15e\n",lnk->f[k-2]);
+        //if (k == 5) exit(1);
   }
+  (lnk->Pl) = (lnk->left)->P;
+
+  if (lnk->c_id != NULL) {
+       lnk->Pl = ((lnk->left)->P)*(lnk->c_id)->cratio;
+       printf("P = %.12e\t", lnk->Pl);  
+       printf("c = %.12e\t",(lnk->c_id)->cratio);  
+  } else printf("P = %.12e\t", lnk->Pl);  
+  (lnk->Pr) = (lnk->right)->P;
+
   /*printf("Left: W = %e\tWb = %e\n", lnk->W_l, lnk->Wb_l);
   for (int j = 0; j < lnk->N; j++) printf("%2d of %d: W = %e\tWb = %e\n", j, lnk->N, ovsq2*(lnk->p[j] + lnk->f[j]), ovsq2*(lnk->p[j] + lnk->f[j]));
   printf("Right: W = %e\tWb = %e\n", lnk->W_r, lnk->Wb_r);
   err_msg("");*/
-  if (k != lnk->N+2) return 1;
-  else return 0;
+  printf("Read %d lines of %d expected from initial data, Check %d \n", k, lnk->N+2, k == lnk->N+2);
+  if (k == lnk->N+2) {
+	return 0;
+  } else {
+	return 1;
+  }
+#if ZERO_GAMMA
+  memset(lnk->gamma, 0, (lnk->N)*sizeof(double)); 
+#endif
 }
 
 /*void rescale_data(network *net) {
@@ -345,16 +420,61 @@ int load_data(FILE *fh, gpipe_ptr lnk) {
   }
 }*/
 
-void save_data(FILE* fh, gpipe_ptr lnk, network* net) {
+void save_data(FILE* fh, gpipe_ptr lnk, network* net, double time) {
   if (fh == NULL) err_msg("Cannot write to file.");
-  fprintf(fh, "# 1. x, km 2. P, kPa 3. Flux, kg/m^2/s\n# N = %d\n\n", lnk->N+2);
-  fprintf(fh, "%.15e\t%.15e\t%.15e\n", 0., ovsq2*(lnk->W_l + lnk->Wb_l)/1000., ovsq2*(lnk->W_l - lnk->Wb_l)/(net->c)); 
-  for (int j = 0; j < lnk->N; j++) {
-    fprintf(fh, "%.15e\t%.15e\t%.15e\n", (j+1)*(lnk->L)/((lnk->N)+1), (lnk->p[j])/1000., (lnk->f[j])/(net->c));
+  fprintf(fh, "# 1. x, km 2. P, MPa 3. Flux, kg/m^2/s\n# N = %d\ttime = %.12e\n\n", lnk->N+2, time);
+#if 1  
+  if (lnk->c_id == NULL) {
+    fprintf(fh, "%.15e\t%.15e\t%.15e\t%.15e\t%.15e\n", 0., 1e-6*(lnk->left->P), (lnk->Fl)/net->c, lnk->q[0]/(net->c), creal(lnk->fx[0])/(net->c)); //ovsq2*(lnk->W_l - lnk->Wb_l)/(net->c));  ovsq2*(lnk->W_l + lnk->Wb_l)/1000000.
+    //printf( "%.15e\t%.15e\t%.15e\n", 0., ovsq2*(lnk->W_l + lnk->Wb_l)/1000., ovsq2*(lnk->W_l - lnk->Wb_l)/(net->c)); 
+    //exit(1);
+  } else {
+    fprintf(fh, "%.15e\t%.15e\t%.15e\t%.15e\t%.15e\n", 0., 1e-6*(lnk->c_id)->cratio*(lnk->left->P), (lnk->Fl)/net->c, lnk->q[0]/(net->c), creal(lnk->fx[0])/(net->c)); //ovsq2*((lnk->c_id)->cratio*(lnk->W_l + lnk->Wb_l))/1000000., ovsq2*(lnk->W_l - lnk->Wb_l)/(net->c));
+    //printf("%.15e\t%.15e\t%.15e\n", 0., 1e-6*(lnk->c_id)->cratio*(lnk->left->P), (lnk->Fl)/net->c); //ovsq2*((lnk->c_id)->cratio*(lnk->W_l + lnk->Wb_l))/1000000., ovsq2*(lnk->W_l - lnk->Wb_l)/(net->c));
+    //exit(1);
   }
-  fprintf(fh, "%.15e\t%.15e\t%.15e\n", lnk->L, ovsq2*(lnk->W_r + lnk->Wb_r)/1000., ovsq2*(lnk->W_r - lnk->Wb_r)/(net->c)); 
+#endif  
+  for (int j = 0; j < lnk->N; j++) {
+    fprintf(fh, "%.15e\t%.15e\t%.15e\t%.15e\t%.15e\n", (j+1)*(lnk->L)/((lnk->N)+1), (lnk->p[j])*1e-6, (lnk->f[j])/(net->c), (lnk->q[j])/(net->c), creal(lnk->fx[j])/(net->c) );
+  }
+  fprintf(fh, "%.15e\t%.15e\t%.15e\t%.15e\t%.15e\n", lnk->L,  1e-6*(lnk->right->P), (lnk->Fr)/net->c, lnk->q[lnk->N-1]/(net->c), creal(lnk->fx[lnk->N-1])/(net->c)); //ovsq2*(lnk->W_r + lnk->Wb_r)/1000000., ovsq2*(lnk->W_r - lnk->Wb_r)/(net->c)); 
 }
-void save_network(network* net, char* fname) {
+
+
+void init_save_balance(network* net) {
+  FILE *fh;
+  char filename[80];
+  for (int j = 0; j < net->nlinks; j++){
+    sprintf(filename, "balance_%03d.txt", j);
+    fh = fopen(filename, "w");
+    fprintf(fh, "# 1. x, km 2. Dphi/Dt 3. D p/Dx 4. D(phi^2/rho)/ Dx\n\n");
+    fclose(fh);
+  }
+}
+
+void save_balance(network* net, network* netb, double dt, double dx) {
+  gpipe_ptr tmp1, tmp2;
+  double f1, f2, dp1, dp2, d1, d2;
+  double T1, T2, T3;
+  FILE *fh;
+  char filename[80];
+  for (int j = 0; j < net->nlinks; j++){
+    tmp1 = net->link[j];
+    tmp2 = netb->link[j];
+    sprintf(filename, "balance_%03d.txt", j);
+    fh = fopen(filename, "a");
+    T1 = 0.;    T2 = 0.;    T3 = 0.;
+    for (int k = 1; k < tmp1->N-1; k++) {
+      f1 = tmp2->f[k]; dp1 = (tmp2->p[k+1]-tmp2->p[k-1])/dx; d1 = pow(tmp2->f[k+1],2)/(tmp2->p[k+1]) - pow(tmp2->f[k-1],2)/(tmp2->p[k-1]);
+      f2 = tmp1->f[k]; dp2 = (tmp1->p[k+1]-tmp1->p[k-1])/dx; d2 = pow(tmp1->f[k+1],2)/(tmp1->p[k+1]) - pow(tmp1->f[k-1],2)/(tmp1->p[k-1]);
+      T1 += pow((f2-f1)/dx,2);
+      T2 += pow(0.5*(dp1+dp2),2);
+      T3 += pow(0.5*(d1+d2)/dx,2);
+    }
+    fprintf(fh, "%.15e\t%.15e\t%.15e\t%.15e\n", (net->curr_T) + 0.5*dt, 0.001*sqrt(T1)*dx/(tmp1->L),  0.001*sqrt(T2)*dx/(tmp1->L), 0.001*sqrt(T3)*dx/(tmp1->L));
+    fclose(fh);
+  } 
+
 
 }
 

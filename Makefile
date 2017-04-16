@@ -1,14 +1,14 @@
 # Makefile for building C stuff with GSL
 
-C_SRCS= drawing.c aux.c noise.c init.c evolve.c main.c bc.c
+C_SRCS= adiabatic.c aux.c noise.c init.c evolve.c main.c bc.c
 C_OBJS= $(C_SRCS:.c=.o)
 CFLAGS= -L/usr/local/lib/ -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
 ICFLAGS= -L/usr/local/include
-LDFLAGS= -lgsl -lgslcblas -lmgl -lm
+LDFLAGS= -lgsl -lgslcblas -lm -lfftw3
 CC=gcc
 
-drawing.o: drawing.c network.h
-	$(CC) $(CFLAGS) -c drawing.c $(LDFLAGS)
+adiabatic.o: adiabatic.c network.h
+	$(CC) $(CFLAGS) -c adiabatic.c $(LDFLAGS)
 
 aux.o: aux.c network.h
 	$(CC) $(CFLAGS) -c aux.c $(LDFLAGS)

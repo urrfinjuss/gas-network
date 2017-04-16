@@ -6,34 +6,36 @@ static gpipe_ptr p_k;
 static node_ptr n_k;
 static double ovsq2, sq2, cs;
 static double *time;
-static double **c2D;
+static double **c2D, **d2D;
+static char msg[80];
+static char dmsg[512];
 static gsl_interp_accel *acc;
-static gsl_spline **spline_arr;
+static gsl_spline **spline_arr, **spline_arr2;
 
 
 void init_compressors(network *net){
    FILE *fh = fopen("c.txt","r");
-   size_t count = 1000;
-   char *line = malloc(1000);
-   char msg[256];
+   size_t count = 16384;
+   char *line = malloc(16384);
+   char msg[8192];
    int rnum, m = 0;
    int lcount = 0;
 
    sq2 = sqrt(2.);
    ovsq2 = 1./sq2;
    cs = net->c;
-   fgets(msg, 256, fh);
-   fgets(msg, 256, fh);
+   fgets(msg, 8192, fh);
+   fgets(msg, 8192, fh);
    while(1){
 	//printf("%d\n", lcount);
-	if(fgets(msg, 256, fh)==NULL) break;
+	if(fgets(msg, 8192, fh)==NULL) break;
 	lcount++;
    }
-   sprintf(msg, "\nTemporal data available for %8f hours\n", 1.*(lcount-1)/12.);
+   sprintf(msg, "\nTemporal data available for %8f hours\n", 1.*(lcount-1)/1800.);
    debug_msg(msg);
    rewind(fh);
-   fgets(msg, 256, fh);
-   fgets(msg, 256, fh);
+   fgets(msg, 8192, fh);
+   fgets(msg, 8192, fh);
 
    double *link_matrix = malloc(sizeof(double)*(net->ncomps + 1)*lcount);
    //err_msg("Complete");
@@ -49,7 +51,8 @@ void init_compressors(network *net){
 	rCount++;
    }
    rewind(fh);
-   printf("%d\n%d\n%d\n", rCount, cCount, net->ncomps);
+   sprintf(dmsg,"%d\n%d\n%d\n", rCount, cCount, net->ncomps);
+   debug_msg(dmsg);
    int i = 0;
    while(getline(&line, &count, fh)!=-1)
    {
@@ -67,132 +70,152 @@ void init_compressors(network *net){
    time = malloc(lcount*sizeof(double));
    c2D = malloc(net->ncomps*sizeof(double *));
    for (int i = 0; i < net->ncomps; i++) c2D[i] = malloc(lcount*sizeof(double));
-   for (int j = 0; j < lcount; j++) time[j] = link_matrix[6*j];
+   for (int j = 0; j < lcount; j++) time[j] = link_matrix[(cCount)*j];
+   printf("time = %f\n", time[1]);
    for (int i = 0; i < net->ncomps; i++) {
 	for (int j = 0; j < lcount; j++) {
-	   c2D[i][j] = link_matrix[6*j+i+1];
+	   c2D[i][j] = link_matrix[cCount*j+i+1];
 	}
    }
    acc = gsl_interp_accel_alloc();
    const gsl_interp_type *t = gsl_interp_cspline_periodic;
    spline_arr = malloc(net->ncomps*sizeof(gsl_spline *));
-   for (int i = 0; i < net->ncomps; i++) spline_arr[i] = gsl_spline_alloc(t, lcount);
-
-#if 1
-   //double xi, yi;
-   //char str[24];
-   //FILE *fh2;
    for (int i = 0; i < net->ncomps; i++) {
-     //sprintf(str, "spline_%d.txt", i);
-     //fh2 = fopen(str, "w");
-     gsl_spline_init(spline_arr[i], time, c2D[i], lcount);
-     //for (int k = 0; k < 101; k++) {
-	//xi = (1-k/100.0)*time[0] + (k/100.0)*time[lcount-1];
-	//yi = gsl_spline_eval(spline_arr[i], xi, acc);
-	//fprintf(fh2, "%g\t%g\n", xi, yi);
-     //}
-     //fclose(fh2);
+	spline_arr[i] = gsl_spline_alloc(t, lcount);
+	gsl_spline_init(spline_arr[i], time, c2D[i], lcount);
    }
+#if 0
+   double xi, yi;
+   char str[24];
+   int Nx = 200;
+   FILE *fh2;
+   for (int i = 0; i < net->ncomps; i++) {
+     sprintf(str, "cspline_%d.txt", i);
+     fh2 = fopen(str, "w");
+     gsl_spline_init(spline_arr[i], time, c2D[i], lcount);
+     for (int k = 0; k < Nx+1; k++) {
+	xi = (1-1.*k/Nx)*time[0] + (1.*k/Nx)*time[lcount-1];
+	yi = gsl_spline_eval(spline_arr[i], xi, acc);
+	fprintf(fh2, "%g\t%g\n", xi, yi);
+     }
+     fclose(fh2);
+   }
+
 #endif
+   update_compressors(net, 0.);
 }
 
-void update_bc2(network *net, double time) {
-  //  Update of BC below
-  for (int j = 0; j < net->nnodes; j++) {
-    n_k = net->knot[j];
-    n_k->P = 0.;
-    for (int l = 0; l < n_k->adj_n; l++) {
-      p_k = n_k->adj_p[l];
-      if (p_k->left == n_k) {            // means left side of pipe p_k is connected to node j
-        n_k->P += p_k->Wb_l;
-      } 
-      else if ( p_k->right == n_k ) {
-	n_k->P += p_k->W_r;
-      } else {
-        err_msg("Error in network construction");
-      }
-    }
-    n_k->P = sq2*(n_k->P)/(n_k->adj_n);
- 
-    for (int l = 0; l < n_k->adj_n; l++) {
-      p_k = n_k->adj_p[l];
-      if (p_k->left == n_k) {            // means left side of pipe p_k is connected to node j
-	n_k->F = n_k->P - sq2*(p_k->Wb_l);
-	p_k->W_l = ovsq2*(n_k->P + n_k->F);
-      } 
-      else if ( p_k->right == n_k ) {
-	n_k->F = sq2*(p_k->W_r) - n_k->P;
-	p_k->Wb_r = ovsq2*(n_k->P - n_k->F);
-      } else {
-        err_msg("Error in network construction");
-      }
-    }
-  }
-  //  End Update  
-  // Override to have influx at node 0
-  /*n_k = net->knot[0]; 
-  n_k->P = 0.; 
-  Q = 289.*(1. - 1./cosh(a*time))*sin(a*time); 
-  //Q = 289.;
-  for (int l = 0; l < n_k->nr; l++) {
-      //printf("%p\n", n_k->outg[l]);
-      p_k = n_k->outg[l];
-      n_k->P += p_k->Wb_l;
-  }
-  for (int l = 0; l < n_k->nl; l++) {
-      //printf("%p\n", n_k->incm[l]);
-      p_k = n_k->incm[l];
-      n_k->P += p_k->Wb_l;
-  }
+void init_demands(network *net){
+   FILE *fh = fopen("d.txt","r");
+   size_t count = 16384;
+   char *line = malloc(16384);
+   char msg[16384];
+   int rnum, m = 0;
+   int lcount = 0;
 
-  n_k->P = sq2*(n_k->P)/(n_k->adj_n) - Q;
-  //printf("%.8e\t%.8e\n", -Q, n_k->P);
+   fgets(msg, 16384, fh);
+   fgets(msg, 16384, fh);
+   while(1){
+	//printf("%d\n", lcount);
+	if(fgets(msg, 16384, fh)==NULL) break;
+	lcount++;
+   }
+   sprintf(msg, "\nTemporal data available for %8f hours\n", 1.*(lcount-1)/1800.);
+   debug_msg(msg);
+   rewind(fh);
+   fgets(msg, 16384, fh);
+   fgets(msg, 16384, fh);
 
-  for (int l = 0; l < n_k->nr; l++) {
-      p_k = n_k->outg[l];
-      n_k->F = n_k->P - sq2*(p_k->Wb_l);
-      p_k->W_l = ovsq2*(n_k->P + n_k->F);
-  }
-  for (int l = 0; l < n_k->nl; l++) {
-      p_k = n_k->incm[l];
-      n_k->F = sq2*(p_k->W_r) - n_k->P;
-      p_k->Wb_r = ovsq2*(n_k->P - n_k->F);
-  }
+   double *link_matrix = malloc(sizeof(double)*(net->nnodes + 1)*lcount);
+   //err_msg("Complete");
 
-  
-  n_k = net->knot[3]; 
-  n_k->P = 0.; 
-  Q = -289.*(1. - 1./cosh(a*time))*cos(a*time); 
-  for (int l = 0; l < n_k->nr; l++) {
-      //printf("%p\n", n_k->outg[l]);
-      p_k = n_k->outg[l];
-      n_k->P += p_k->Wb_l;
-  }
-  for (int l = 0; l < n_k->nl; l++) {
-      //printf("%p\n", n_k->incm[l]);
-      p_k = n_k->incm[l];
-      n_k->P += p_k->Wb_l;
-  }
+   getline(&line, &count, fh);
+   int read = -1, cur = 0, cCount = 0;
+   while( sscanf(line+cur, "%lf%n", &link_matrix[cCount], &read) == 1) {
+	cur+=read;
+	cCount++;
+   }
+   int rCount = 1;
+   while(getline(&line, &count, fh)!=-1) {
+	rCount++;
+   }
+   rewind(fh);
+   sprintf(dmsg,"%d\n%d\n%d\n", rCount, cCount, net->nnodes);
+   debug_msg(dmsg);
+   int i = 0;
+   while(getline(&line, &count, fh)!=-1)
+   {
+     read = -1;
+     cur  =  0;
+     while(sscanf(line+cur, "%lf%n", &link_matrix[i], &read) == 1) {
+	cur+=read;
+	i=i+1;
+     }
+   }
+   fclose(fh);
+   sprintf(msg, "Demand data has %d entries\n", cCount*rCount);
+   debug_msg(msg);
 
-  n_k->P = sq2*(n_k->P)/(n_k->adj_n) - Q;
-  //printf("%.8e\t%.8e\n", -Q, n_k->P);
+   time = malloc(lcount*sizeof(double));
+   d2D = malloc(net->nnodes*sizeof(double *));
+   for (int i = 0; i < net->nnodes; i++) d2D[i] = malloc(lcount*sizeof(double));
+   for (int j = 0; j < lcount; j++) time[j] = link_matrix[(net->nnodes+1)*j];
+   for (int i = 0; i < net->nnodes; i++) {
+	for (int j = 0; j < lcount; j++) {
+	   d2D[i][j] = link_matrix[(net->nnodes+1)*j+i+1];
+	}
+   }
 
-  for (int l = 0; l < n_k->nr; l++) {
-      p_k = n_k->outg[l];
-      n_k->F = n_k->P - sq2*(p_k->Wb_l);
-      p_k->W_l = ovsq2*(n_k->P + n_k->F);
-  }
-  for (int l = 0; l < n_k->nl; l++) {
-      p_k = n_k->incm[l];
-      n_k->F = sq2*(p_k->W_r) - n_k->P;
-      p_k->Wb_r = ovsq2*(n_k->P - n_k->F);
-  }
-  //err_msg("Complete");*/
+   acc = gsl_interp_accel_alloc();
+   const gsl_interp_type *t = gsl_interp_cspline_periodic;
+   spline_arr2 = malloc(net->nnodes*sizeof(gsl_spline *));
+   for (int i = 0; i < net->nnodes; i++) {
+	spline_arr2[i] = gsl_spline_alloc(t, lcount);
+	gsl_spline_init(spline_arr2[i], time, d2D[i], lcount);
+   }
+#if 0
+
+   double xi, yi;
+   char str[24];
+   FILE *fh2;
+   for (int i = 0; i < net->nnodes; i++) {
+     sprintf(str, "dspline_%d.txt", i);
+     fh2 = fopen(str, "w");
+     gsl_spline_init(spline_arr2[i], time, d2D[i], lcount);
+     for (int k = 0; k < 401; k++) {
+	xi = (1-k/400.0)*time[0] + (k/400.0)*time[lcount-1];
+	yi = gsl_spline_eval(spline_arr2[i], xi, acc);
+	fprintf(fh2, "%g\t%g\n", xi, yi);
+     }
+     fclose(fh2);
+   }
+   exit(1);
+#endif
+   update_demands(net, 0.);
 }
 
 
 
 
+void update_compressors(network* net, double ctime){
+
+   for (int j = 0; j < net->ncomps; j++) {
+     (net->cssr[j]).cratio_prev = (net->cssr[j]).cratio;
+     (net->cssr[j]).cratio = gsl_spline_eval(spline_arr[j], ctime, acc);
+     sprintf(msg, "C%d (%p): Compression %.4f\n", j, &(net->cssr[j]), (net->cssr[j]).cratio);
+     debug_msg(msg);
+   }
+}
+
+void update_demands(network *net, double ctime) {
+
+   for (int j = 0; j < net->nnodes; j++) {
+     net->knot[j]->D_prev = net->knot[j]->D;
+     net->knot[j]->D = gsl_spline_eval(spline_arr2[j], ctime, acc);
+     sprintf(msg, "D%d: Demand %f\n", j, (net->knot[j])->D);
+     debug_msg(msg);
+   }
+}
 
 
 
