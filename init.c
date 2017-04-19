@@ -1,4 +1,6 @@
 #include "network.h"
+
+//#define DEBUG_MODE 1
 static double ovsq2, sq2, cs;
 //static compressor_ptr cssr;
 
@@ -52,9 +54,11 @@ void init_links(network *net) {
    int rnum, m = 0;
    int nlinks2 = 0;
    double *link_matrix = malloc(sizeof(double)*(net->nnodes)*(net->nnodes));
-
-
-   getline(&line, &count, fh);
+  
+   
+   //getline(&line, &count, fh);
+   fgets(line, (int) count, fh);
+   printf("%s\n%d\n", line, count);
    int read = -1, cur = 0, cCount = 0;
    while( sscanf(line+cur, "%lf%n", &link_matrix[cCount], &read) == 1) {
 	cur+=read;
@@ -88,6 +92,10 @@ void init_links(network *net) {
    init_arrays(net);
    sprintf(msg, "\nTotal links in network:  %d\n", net->nlinks);
    debug_msg(msg);
+   //if (DEBUG_MODE) {
+   //  printf("Init Links Complete.\n");
+   //  exit(1);
+   //}
 }
 
 void allocate_memory(network *net, double *lm) {
