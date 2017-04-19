@@ -58,21 +58,22 @@ void init_links(network *net) {
    
    //getline(&line, &count, fh);
    fgets(line, (int) count, fh);
-   printf("%s\n%d\n", line, count);
+   printf("%s\n%d\n", line, (int) count);
    int read = -1, cur = 0, cCount = 0;
    while( sscanf(line+cur, "%lf%n", &link_matrix[cCount], &read) == 1) {
 	cur+=read;
 	cCount++;
    }
    int rCount = 1;
-   while(getline(&line, &count, fh)!=-1) {
-	rCount++;
+   //while(getline(&line, &count, fh)!=-1) {
+   while(fgets(line, (int) count, fh)!=NULL) {
+     rCount++;
    }
    rewind(fh);
    printf("%d\n%d\n%d\n", rCount, cCount, net->nnodes);
    int i = 0;
-   while(getline(&line, &count, fh)!=-1)
-   {
+   while(fgets(line, (int) count, fh)!=NULL) {
+   //while(getline(&line, &count, fh)!=-1) {
      read = -1;
      cur  =  0;
      while(sscanf(line+cur, "%lf%n", &link_matrix[i], &read) == 1) {

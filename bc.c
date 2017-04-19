@@ -40,22 +40,25 @@ void init_compressors(network *net){
    double *link_matrix = malloc(sizeof(double)*(net->ncomps + 1)*lcount);
    //err_msg("Complete");
 
-   getline(&line, &count, fh);
+   fgets(line, (int) count, fh);
+   //getline(&line, &count, fh);
+   
    int read = -1, cur = 0, cCount = 0;
    while( sscanf(line+cur, "%lf%n", &link_matrix[cCount], &read) == 1) {
 	cur+=read;
 	cCount++;
    }
    int rCount = 1;
-   while(getline(&line, &count, fh)!=-1) {
+   //while(getline(&line, &count, fh)!=-1) {
+   while(fgets(line, (int) count, fh)!=NULL) {
 	rCount++;
    }
    rewind(fh);
    sprintf(dmsg,"%d\n%d\n%d\n", rCount, cCount, net->ncomps);
    debug_msg(dmsg);
    int i = 0;
-   while(getline(&line, &count, fh)!=-1)
-   {
+   //while(getline(&line, &count, fh)!=-1) {
+   while(fgets(line, (int) count, fh)!=NULL) {
      read = -1;
      cur  =  0;
      while(sscanf(line+cur, "%lf%n", &link_matrix[i], &read) == 1) {
