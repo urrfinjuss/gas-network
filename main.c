@@ -49,8 +49,15 @@ int main (int argc, char *argv[])
   prepare_arrays_adiabatic(&syst); // initialize adiabatic code arrays
   
   for (int n = 0; n < syst.nlinks; n++){ 
-    sprintf(outdir, "%s/pipe_%03d", cwd, n); 
+    sprintf(outdir, "%s/pipe_%03d", cwd, n);
+#ifdef _WIN32
+    printf("Running on Windows\n");
+    mkdir(outdir);
+#endif
+#ifdef linux 
+    printf("Running on Linux\n");
     mkdir(outdir, 0777);
+#endif
     debug_msg("Saving gas pipe data to:");
     debug_msg(syst.current_dir);
     debug_msg("\n");
@@ -64,7 +71,12 @@ int main (int argc, char *argv[])
   }
 
   sprintf(outdir2, "%s/network", cwd);
-  mkdir(outdir2, 0777);
+#ifdef _WIN32
+    mkdir(outdir2);
+#endif
+#ifdef linux 
+    mkdir(outdir2, 0777);
+#endif
   sprintf(msg2, "%s/%s_%03d.png", outdir2, syst.dname, 0);
   //mgl_draw_network(&syst, msg2, title);
 
