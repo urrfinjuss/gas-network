@@ -140,7 +140,8 @@ void init_demands(network *net){
 	cCount++;
    }
    int rCount = 1;
-   while(getline(&line, &count, fh)!=-1) {
+   while(fgets(line, (int) count, fh)!=NULL) {
+   //while(getline(&line, &count, fh)!=-1) {
 	rCount++;
    }
    rewind(fh);
