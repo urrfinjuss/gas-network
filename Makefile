@@ -9,7 +9,7 @@ ifeq ($(OS), Linux)
 CFLAGS= -L/usr/local/lib/ -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
 ICFLAGS= -L/usr/local/include
 else
-CFLAGS=  -L"C:/home/gas-tools/libraries/fftw3/" -I"C:/home/gas-tools/libraries/gsl-2.3/build" -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
+CFLAGS=  -L"C:/home/gas-tools/libraries/fftw3/" -I"C:/home/gas-tools/libraries/fftw3/" -I"C:/home/gas-tools/libraries/gsl-2.3/build/" -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
 ICFLAGS= -Wall
 endif
 
