@@ -5,7 +5,7 @@
 static gpipe_ptr p_k;
 static node_ptr n_k;
 static double ovsq2, sq2, cs;
-static double *time;
+static double *Time;
 static double **c2D, **d2D;
 static char msg[80];
 static char dmsg[512];
@@ -70,11 +70,11 @@ void init_compressors(network *net){
    sprintf(msg, "Compression data has %d entries\n", cCount*rCount);
    debug_msg(msg);
 
-   time = malloc(lcount*sizeof(double));
+   Time = malloc(lcount*sizeof(double));
    c2D = malloc(net->ncomps*sizeof(double *));
    for (int i = 0; i < net->ncomps; i++) c2D[i] = malloc(lcount*sizeof(double));
-   for (int j = 0; j < lcount; j++) time[j] = link_matrix[(cCount)*j];
-   printf("time = %f\n", time[1]);
+   for (int j = 0; j < lcount; j++) Time[j] = link_matrix[(cCount)*j];
+   printf("time = %f\n", Time[1]);
    for (int i = 0; i < net->ncomps; i++) {
 	for (int j = 0; j < lcount; j++) {
 	   c2D[i][j] = link_matrix[cCount*j+i+1];
@@ -85,7 +85,7 @@ void init_compressors(network *net){
    spline_arr = malloc(net->ncomps*sizeof(gsl_spline *));
    for (int i = 0; i < net->ncomps; i++) {
 	spline_arr[i] = gsl_spline_alloc(t, lcount);
-	gsl_spline_init(spline_arr[i], time, c2D[i], lcount);
+	gsl_spline_init(spline_arr[i], Time, c2D[i], lcount);
    }
 #if 0
    double xi, yi;
@@ -161,10 +161,10 @@ void init_demands(network *net){
    sprintf(msg, "Demand data has %d entries\n", cCount*rCount);
    debug_msg(msg);
 
-   time = malloc(lcount*sizeof(double));
+   Time = malloc(lcount*sizeof(double));
    d2D = malloc(net->nnodes*sizeof(double *));
    for (int i = 0; i < net->nnodes; i++) d2D[i] = malloc(lcount*sizeof(double));
-   for (int j = 0; j < lcount; j++) time[j] = link_matrix[(net->nnodes+1)*j];
+   for (int j = 0; j < lcount; j++) Time[j] = link_matrix[(net->nnodes+1)*j];
    for (int i = 0; i < net->nnodes; i++) {
 	for (int j = 0; j < lcount; j++) {
 	   d2D[i][j] = link_matrix[(net->nnodes+1)*j+i+1];
@@ -176,7 +176,7 @@ void init_demands(network *net){
    spline_arr2 = malloc(net->nnodes*sizeof(gsl_spline *));
    for (int i = 0; i < net->nnodes; i++) {
 	spline_arr2[i] = gsl_spline_alloc(t, lcount);
-	gsl_spline_init(spline_arr2[i], time, d2D[i], lcount);
+	gsl_spline_init(spline_arr2[i], Time, d2D[i], lcount);
    }
 #if 0
 
