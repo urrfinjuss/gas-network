@@ -41,7 +41,7 @@ simulate: $(C_OBJS)
 	echo "$(OS)"
 	$(CC) $(CFLAGS) -o simulate.x $(C_OBJS) $(LDFLAGS)
 	cp simulate.x ./demo/simulation_1/
-	mkdir -p ./demo/network
+	mkdir -p ./demo/simulation_1/network
 	mkdir -p ./demo/simulation_1/pipe_000
 	mkdir -p ./demo/simulation_1/pipe_001
 	mkdir -p ./demo/simulation_1/pipe_002
