@@ -36,7 +36,7 @@ class Example(Frame):
 		    'color'      : 'r',
 		    'fontweight' : 'bold',
 		    'fontsize'   : 14}
-		self.npts = 128;
+		self.npts = 32;
 		self.sounds = 377.9683;
 		self.skip = 1000.
 		self.dt = 5000.*self.skip/(self.npts * self.sounds)
