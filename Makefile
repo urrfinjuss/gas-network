@@ -40,7 +40,7 @@ bc.o:	bc.c network.h
 simulate: $(C_OBJS)
 	echo "$(OS)"
 	$(CC) $(CFLAGS) -o simulate.x $(C_OBJS) $(LDFLAGS)
+	cp simulate.x ./demo/simulation_1/
 
 clean:
 	rm -f *~ *.o simulate.x
-	rm -f ../debug/simulate.x
