@@ -13,14 +13,14 @@
 #define LINEAR_BC 1
 #define DEBUGMODE 0
 #define BALANCECHECK 0
-#define ADIABATIC 1
-#define ADIABATIC_SAVE 1
+#define ADIABATIC 0
+#define ADIABATIC_SAVE 0
 #define ZERO_GAMMA 1
 #define NOISE 0
 #define POOR_MANS_NOISE 1
 #define PIPE_SAVE 1
 #define pi 2*acos(0)
-#define RFLAG_P_FIXED 1
+#define RFLAG_P_FIXED 0
 
 typedef struct network network, *network_ptr;
 typedef struct node node, *node_ptr;

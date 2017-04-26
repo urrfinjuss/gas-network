@@ -172,7 +172,7 @@ void update_bc(network *net, double time) {
     debug_msg(dmsg);
 
     
-    unsigned int sim = 3;
+    //unsigned int sim = 3;
     if (j == 0) {
 	if (net->LFLAG == 1) {
 	  n_k->P = net->P0;
@@ -180,6 +180,7 @@ void update_bc(network *net, double time) {
 	} else {
 	  n_k->P = (sq2*n_k->P)/(n_k->mult) + net->F0;  // should derive this again... n_k->P = (sq2*n_k->P + (net->F0))/(n_k->mult);
 	}
+        /*
         if (sim == 2) {
           double P0 = 1e7;
           double Pval = P0;
@@ -195,11 +196,12 @@ void update_bc(network *net, double time) {
  	  Pval += B*cos(1.0*frq*time);
  	  n_k->P = Pval;
         }
-    
+       */
     } else n_k->P = (sq2*n_k->P - (net->c)*(n_k->D))/(n_k->mult);
 
     if (j == 1) { 
       if (RFLAG_P_FIXED) {
+      /*
  	if (sim == 1) {
           double A1 = 6.40365e+06;
           double B1 = 2.80523e+06;
@@ -238,6 +240,7 @@ void update_bc(network *net, double time) {
           Pval += C1*sin(2.0*frq*time) + C2*cos(2.0*frq*time);
           n_k->P = Pval;
         }
+      */
       }
     }
 
