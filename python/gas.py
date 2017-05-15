@@ -36,7 +36,7 @@ class Example(Frame):
 		    'color'      : 'r',
 		    'fontweight' : 'bold',
 		    'fontsize'   : 14}
-		self.npts = 128;
+		self.npts = 32;
 		self.sounds = 377.9683;
 		self.skip = 1000.
 		self.dt = 5000.*self.skip/(self.npts * self.sounds)
@@ -191,7 +191,7 @@ class Example(Frame):
 			for m in range(self.G.number_of_edges()):
 				for i,j in self.G.edges():
 					if (self.G[i][j]['key'] == m):
-						fhin.write("%.4f " % (self.G[i][j]['diameter']/39.370))
+						fhin.write("%.4f " % (self.G[i][j]['diameter'])) # conversion to SI: divide by /39.370
 			fhin.write("\n\n# nodes are numerated by the rows of matrix.cfg\n# e.g. first row corresponds to node 1 and etc\n\n")
 			fhin.write("[Node Parameters]\n")
 			fhin.write("#compressions\n")

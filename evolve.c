@@ -447,7 +447,7 @@ void evolve_network(network *net) {
   double dx = 1000./(net->npcent);
   double dt = dx/(net->c);  			// physical time-step (seconds)
   int n_steps = round((net->tmax)/dt);
-  //int n_steps = 16;
+  //int n_steps = 4;
   int n_skip = net->nskip;
   //int n_skip = 1;
   int n_curr = 0;
