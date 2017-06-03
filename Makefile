@@ -6,11 +6,11 @@ C_OBJS= $(C_SRCS:.c=.o)
 
 OS := $(shell uname)
 ifeq ($(OS), Linux)
-CFLAGS= -L/usr/local/lib/ -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
-ICFLAGS= -L/usr/local/include
+CFLAGS= -I/home/sdyachen/usr/include -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
+LFLAGS= -L/home/sdyachen/usr/lib -Wall 
 else
-CFLAGS=  -L"/home/Orange/usr/lib/" -I"/home/Orange/usr/include" -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
-ICFLAGS= -Wall
+CFLAGS= -I"/home/Orange/usr/include" -Wall -Wno-unused-variable -Wno-unused-result -std=gnu99 -Ofast -flto
+LFLAGS= -L"/home/Orange/usr/lib/" -Wall
 endif
 
 LDFLAGS= -lgsl -lgslcblas -lm -lfftw3
@@ -39,7 +39,7 @@ bc.o:	bc.c network.h
 
 simulate: $(C_OBJS)
 	echo "$(OS)"
-	$(CC) $(CFLAGS) -o simulate.x $(C_OBJS) $(LDFLAGS)
+	$(CC) $(LFLAGS) -o simulate.x $(C_OBJS) $(LDFLAGS)
 	cp simulate.x ./demo/simulation_1/
 	mkdir -p ./demo/simulation_1/network
 	mkdir -p ./demo/simulation_1/pipe_000
