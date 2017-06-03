@@ -36,8 +36,8 @@ class Example(Frame):
 		    'fontsize'   : 14}
 		self.npts = 32;
 		self.sounds = 377.9683;
-		self.skip = 1000.
-		self.dt = 5000.*self.skip/(self.npts * self.sounds)
+		self.skip = 4000.
+#		self.dt = 5000.*self.skip/(self.npts * self.sounds)
 
 		menubar = Menu(self.parent)
 		menubar.config(font=("Helvetica", 14, "italic"))
@@ -154,16 +154,17 @@ class Example(Frame):
 			Tmax = rawC[Nmax-1,0];
 			rawP = np.loadtxt("./data_000.txt"); 
 			Mmax = rawP.shape[0];
-			dX = rawP[1,0]-rawP[0,0];
+			dX = 1000.*(rawP[1,0]-rawP[0,0]);
 			dT = dX/self.sounds;
+			self.dT_skip = dT*self.skip;
 			Max_Steps = np.floor(Tmax/dT);
 			Max_Files = np.floor(Tmax/dT/self.skip);
 
 			self.log.insert(END,"Time Step %f secs\n" % np.float64(dT));
 			self.log.insert(END,"Running %d time steps\n" % np.uint(Max_Steps));
 			self.log.insert(END,"Max Evolution time is %f hours\n" % np.float64(Tmax/3600.));
-			self.log.insert(END,"Writing data file every %f minutes\n" % np.float64(Tmax/60./self.skip));
-			self.log.insert(END, "Running\n")
+			self.log.insert(END,"Writing data file every %f minutes\n" % np.float64(self.dT_skip/60.));
+			self.log.insert(END, "Running\nSee terminal for current progress\n");
 			fhin = open("python.cfg","w")			
 			fhin.write("# This is an auto-generated input file for gas network simulaion\n")
 			fhin.write("# Pipe lengths must be increments of 10 km, npts number of gridpoints per 1 km of pipe\n")
@@ -235,7 +236,7 @@ class Example(Frame):
 				self.a.axis([-1, 1, -1, 1])
 				self.a.axis('off')
 				self.a.set_title("Gas Network colored by values of pressure.")
-				self.a.text(0.45,0.05, "Time t = %.4f hours" % (1.*n*self.dt/3600.),transform=self.a.transAxes )
+				self.a.text(0.45,0.05, "Time t = %.2f mins" % (1.*n*self.dT_skip/60.),transform=self.a.transAxes )
 				self.updateColors(n)
 				self.parent.update()
 				n = n+1
