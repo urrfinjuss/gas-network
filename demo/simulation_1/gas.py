@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-from Tkinter import Tk, Frame, BOTH, Text, Menu, END, Label, Canvas, Button
-from ttk import Style
+from tkinter import Tk, Frame, BOTH, Text, Menu, END, Label, Canvas, Button, ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
@@ -9,9 +8,9 @@ from scipy.interpolate import interp1d
 from numpy import amax, amin
 
 import time
-import tkFileDialog 
+import tkinter.filedialog as tkFileDialog 
+import tkinter.messagebox as box
 import subprocess 
-import tkMessageBox as box
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -55,8 +54,8 @@ class Example(Frame):
 		fileMenu2.config(font=("Helvetica", 14, "italic"))
 		fileMenu2.add_command(label="Set Parameters", command=self.quit)
 		menubar.add_cascade(label="Parameters", menu=fileMenu2)
-		lbl1.grid(sticky="N",pady=4,padx=5,row=0,column=0,columnspan=2)
 		lbl1=Label(self.parent,text="Gas Network",fg = "black",font=("Helvetica", 14, "bold"))
+		lbl1.grid(sticky="N",pady=4,padx=5,row=0,column=0,columnspan=2)
 
 		self.f = plt.figure(figsize=(5,4), dpi=80)
 		self.cmap = plt.cm.jet #ok
@@ -145,9 +144,25 @@ class Example(Frame):
 		self.Animate = False
 		self.log.insert(END, "Stopped\n")
 
-	def onRun(self):
 
+
+
+	def onRun(self):
 		if self.Loaded:
+			rawC = np.loadtxt("./c.txt"); 
+			Nmax = rawC.shape[0];
+			Tmax = rawC[Nmax-1,0];
+			rawP = np.loadtxt("./data_000.txt"); 
+			Mmax = rawP.shape[0];
+			dX = rawP[1,0]-rawP[0,0];
+			dT = dX/self.sounds;
+			Max_Steps = np.floor(Tmax/dT);
+			Max_Files = np.floor(Tmax/dT/self.skip);
+
+			self.log.insert(END,"Time Step %f secs\n" % np.float64(dT));
+			self.log.insert(END,"Running %d time steps\n" % np.uint(Max_Steps));
+			self.log.insert(END,"Max Evolution time is %f hours\n" % np.float64(Tmax/3600.));
+			self.log.insert(END,"Writing data file every %f minutes\n" % np.float64(Tmax/60./self.skip));
 			self.log.insert(END, "Running\n")
 			fhin = open("python.cfg","w")			
 			fhin.write("# This is an auto-generated input file for gas network simulaion\n")
@@ -173,7 +188,7 @@ class Example(Frame):
 			fhin.write("#dissip_coef=\t0.01\n")
 			fhin.write("#fix_pressure=\t1\n")
 			fhin.write("#distr_gamma=\t5e-7\t\n")
-			fhin.write("#simul_time=\t24.\n\n")
+			fhin.write("#simul_time=\t%f\n\n" % np.float64(Tmax/3600.))
 			fhin.write("# Numeration of pipes goes according incidence.txt:\n# take first column, first nonzero entry in the first column\n# is pipe 1, the second nonzero entry in the first column is pipe 2 and so on.\n#\n# All entries must be in SI units, except pipe lengths which must be given in km.\n\n")
 			fhin.write("[Pipe Parameters]\n")
 			fhin.write("#lengths\n")
@@ -194,10 +209,12 @@ class Example(Frame):
 			fhin.write("\n")
 			fhin.close()
 			A = nx.adjacency_matrix(self.G);
-			U = np.triu(A); L = np.tril(A);
+			print(A)
+			print(A.todense())
+			U = np.triu(A.todense(),k=0); L = np.tril(A.todense(),k=0);
 			np.savetxt('incidence.txt', L - U, '%.1f')
 			if os.path.exists('./simulate.x'):
-				subprocess.call(["./simulate.x", "python.cfg"])
+				subprocess.Popen(["./simulate.x", "python.cfg"])
 			else:
 				self.log.insert(END, "Binary missing.\n")
 
