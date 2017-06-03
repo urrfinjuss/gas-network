@@ -19,7 +19,6 @@ import matplotlib as mpl
 import os, os.path
 from sys import exit
 
-
 class Example(Frame):
 	def __init__(self, parent, n):
 		Frame.__init__(self, parent)
@@ -56,12 +55,8 @@ class Example(Frame):
 		fileMenu2.config(font=("Helvetica", 14, "italic"))
 		fileMenu2.add_command(label="Set Parameters", command=self.quit)
 		menubar.add_cascade(label="Parameters", menu=fileMenu2)
-
-		lbl1 = Label(self.parent, 
-			text="Gas Network", 
-			fg = "black", 
-			font=("Helvetica", 14, "bold"))
-	        lbl1.grid(sticky="N", pady=4, padx=5, row=0, column=0, columnspan=2)
+		lbl1.grid(sticky="N",pady=4,padx=5,row=0,column=0,columnspan=2)
+		lbl1=Label(self.parent,text="Gas Network",fg = "black",font=("Helvetica", 14, "bold"))
 
 		self.f = plt.figure(figsize=(5,4), dpi=80)
 		self.cmap = plt.cm.jet #ok
@@ -101,14 +96,13 @@ class Example(Frame):
 			x = 0;
 			y = 0;
 		self.parent.geometry('%dx%d+%d+%d' % (w, h, x, y))
-		print "Calling Tk Window. Native resolution %d x %d" % (sw, sh)
+		print("Calling Tk Window. Native resolution %d x %d" % (sw, sh))
 
 	def onOpen(self):      
 		ftypes = [('Gas Model files', '*.txt'), ('All files', '*')]
 		dlg = tkFileDialog.Open(self, filetypes = ftypes)
 		fl = dlg.show()
-        
-        	if fl != '':
+		if fl != '':
 			text = self.readFile(fl)
 			self.log.insert(END, "Opened file: %s\n" % fl)
 			self.txt.insert(END, text)
@@ -120,8 +114,8 @@ class Example(Frame):
 		fl = dlg.show()
 		self.Filename = os.path.basename(fl)
 		#print self.Filename
-        	if fl != '':
-	        	self.Loaded = True;
+		if fl != '':
+			self.Loaded = True;
 			self.log.insert(END, "Loaded model from file:\t%s\n" % fl)
 			text = self.read_model(fl)
 			self.log.insert(END, "Checking for data along pipes ... ")
@@ -256,7 +250,7 @@ class Example(Frame):
 			lst = f.readline().split()
 			node_pos.append(int(lst[1]))
 			edge_dir.append(int(lst[2]))
-			print node_pos[k], edge_dir[k]
+			print(node_pos[k], edge_dir[k])
 
 		list = self.G.edges() 
 		list = sorted(list, key = lambda x: (x[0], x[1]))
@@ -407,11 +401,11 @@ class Example(Frame):
 			# colorbar [-1:1]
 			cm_c = 0.5*(self.pmax+self.pmin)
 			cm_a = (self.pmax - self.pmin)   
-      			cm = 2*(cdata[1] - cm_c)/cm_a
+			cm = 2*(cdata[1] - cm_c)/cm_a
 
 			#colorbar [0:1]
 			cm_c = self.pmin;
-      			cm = (cdata[1] - cm_c)/cm_a
+			cm = (cdata[1] - cm_c)/cm_a
 			#print cm 
 			
 			#colorbar [pmin:pmax]

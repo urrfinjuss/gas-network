@@ -23,7 +23,7 @@ waux.o: waux.c network.h
 	$(CC) $(CFLAGS) -c waux.c $(LDFLAGS)
 
 noise.o: noise.c network.h
-	$(CC) $(CFLAGS) -c noise.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -c noise.c $(LFLAGS) $(LDFLAGS)
 
 init.o: init.c network.h
 	$(CC) $(CFLAGS) -c init.c $(LDFLAGS)
@@ -39,7 +39,7 @@ bc.o:	bc.c network.h
 
 simulate: $(C_OBJS)
 	echo "$(OS)"
-	$(CC) $(LFLAGS) -o simulate.x $(C_OBJS) $(LDFLAGS)
+	$(CC) -o simulate.x $(C_OBJS) $(LFLAGS) $(LDFLAGS)
 	cp simulate.x ./demo/simulation_1/
 	mkdir -p ./demo/simulation_1/network
 	mkdir -p ./demo/simulation_1/pipe_000
