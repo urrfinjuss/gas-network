@@ -1,6 +1,6 @@
 #Makefile for building C stuff with GSL
 
-C_SRCS= input.c output.c message.c init.c main.c
+C_SRCS= input.c output.c message.c init.c main.c network.c nodes.c comps.c verify.c temporal.c spatial.c
 C_OBJS= $(C_SRCS:.c=.o)
 
 OS := $(shell uname)
@@ -15,9 +15,6 @@ endif
 LDFLAGS= -lgsl -lgslcblas -lm -lfftw3
 CC=gcc
 
-init.o: init.c header.h
-	$(CC) $(CFLAGS) -c init.c $(LDFLAGS)
-
 message.o: message.c header.h
 	$(CC) $(CFLAGS) -c message.c $(LDFLAGS)
 
@@ -27,6 +24,27 @@ output.o: output.c header.h
 input.o: input.c header.h
 	$(CC) $(CFLAGS) -c input.c $(LDFLAGS)
 
+verify.o: input.c header.h
+	$(CC) $(CFLAGS) -c verify.c $(LDFLAGS)
+
+spatial.o: spatial.c header.h
+	$(CC) $(CFLAGS) -c spatial.c $(LDFLAGS)
+
+init.o: init.c header.h
+	$(CC) $(CFLAGS) -c init.c $(LDFLAGS)
+
+network.o: network.c header.h
+	$(CC) $(CFLAGS) -c network.c $(LDFLAGS)
+
+nodes.o: nodes.c header.h
+	$(CC) $(CFLAGS) -c nodes.c $(LDFLAGS)
+
+temporal.o: temporal.c header.h
+	$(CC) $(CFLAGS) -c temporal.c $(LDFLAGS)
+
+comps.o: comps.c header.h
+	$(CC) $(CFLAGS) -c comps.c $(LDFLAGS)
+
 main.o: main.c header.h
 	$(CC) $(CFLAGS) -c main.c $(LDFLAGS)
 
@@ -34,7 +52,14 @@ proto: $(C_OBJS)
 	echo "$(OS)"
 	$(CC) -o proto.x $(C_OBJS) $(LFLAGS) $(LDFLAGS)
 	mkdir -p ./out
-	mkdir -p ./ic
+	mkdir -p ./initialize/ic
+	mkdir -p ./initialize/bc
+	mkdir -p ./initialize/bc/comps
+	mkdir -p ./initialize/bc/nodes
+	mkdir -p ./debug
+	mkdir -p ./debug/nodes
+	mkdir -p ./debug/comps
 
 clean:
 	rm -f *~ *.o
+	rm -rf ./debug
