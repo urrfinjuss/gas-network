@@ -4,6 +4,63 @@ static char text[80];
 static char line[256];
 static char str[256];
 
+// ---- general purpose functions
+
+FILE* fopen_set(char* fname, char* flag, const unsigned skip_lines) {
+  char line[80];
+  FILE *fh = fopen(fname, flag);
+	if (fh) {
+		for (int j = 0; j < skip_lines; j++) fgets(line, 80, fh);
+	} else {
+		sprintf(text, "Cannot open file: %s\n", fname);
+		dmesg("Cannot open file\n" ,1);
+	}
+	return fh;
+}
+
+long int count_data(char *fname) {
+	char line[80];
+	FILE *fh = fopen_set(fname, "r", 3);
+	long int nbase = -1;
+	while(fgets(line, 80, fh)) nbase++;
+	fclose(fh);
+	return nbase;
+}
+
+// ---- initialize network functions
+
+void read_input_file(char *fname) {
+	dmesg("read_input_file:\n", 0);
+	FILE *fh = fopen(fname, "r");
+	if (fh) {
+		char line[80], str[80], value[80];
+		while (fgets(line, 80, fh) != NULL) {
+			sscanf(line, "%s\t%s", str, value);
+			if (strcmp(str, "name=") == 0)   sprintf(par.name, "%s", value);
+			if (strcmp(str, "step=") == 0)   par.dx = atof(value);
+			if (strcmp(str, "skip=") == 0)   par.skip = atoi(value);
+			if (strcmp(str, "tmax=") == 0)   par.tmax = 3600.*atof(value);
+			if (strcmp(str, "sounds=") == 0) par.sound = atof(value);
+			if (strcmp(str, "DWdiss=") == 0) par.friction = atof(value);
+			if (strcmp(str, "interp=") == 0) sprintf(par.intmethod, "%s", value);
+		}
+		fclose(fh);
+	} else dmesg("Cannot open configuration file.\n", 1);
+	par.dt = par.dx/par.sound;
+	par.nsteps = floor(par.tmax/par.dt);
+	par.tmax = par.dt*par.nsteps;
+	par.curr = 0;
+	if      (strcmp(par.intmethod,"linear")==0)						par.iType = gsl_interp_linear;
+	else if (strcmp(par.intmethod,"cspline")==0)					par.iType = gsl_interp_cspline;
+	else if (strcmp(par.intmethod,"akima")==0)						par.iType = gsl_interp_akima;
+	else if (strcmp(par.intmethod,"steffen")==0)					par.iType = gsl_interp_steffen;
+	else if (strcmp(par.intmethod,"cspline_periodic")==0)	par.iType = gsl_interp_cspline_periodic;
+	else if (strcmp(par.intmethod,"akima_periodic")==0) 	par.iType = gsl_interp_akima_periodic;
+	else dmesg("Unknown Interpolation Type.\n",1);
+	dmesg("read_input_file:\tPassed\n", 0);
+	if (DEBUG_MODE) verify_input_conf();
+}
+
 void read_network_list(char *fname) {
 	dmesg("read_network_list:\n", 0);
 	FILE *fh = fopen(fname, "r");
@@ -22,6 +79,7 @@ void read_network_list(char *fname) {
 	update_nodes_comps();
 	update_nodes_pipes();
 	dmesg("read_network_list:\tPassed\n", 0);
+	if (DEBUG_MODE) verify_network_conf();
 }
 
 void read_nodes_list(char *fname) {
@@ -58,6 +116,7 @@ void read_pipes_list(char *fname) {
 		net.pipe[j].right = &net.node[R_Id];
 		net.pipe[j].len   = 1.0e+3*length;
 		net.pipe[j].wid   = width;
+		net.pipe[j].cmp   = NULL;
 		net.node[L_Id].nright++;
 		net.node[R_Id].nleft++;
 	}
@@ -76,6 +135,7 @@ void read_comps_list(char *fname) {
 		}
 		net.comp[j].loc  = &net.node[n];
 		net.comp[j].dest = &net.pipe[p];
+		net.pipe[p].cmp  = &net.comp[j];
 		net.node[n].ncomp++;
 	}
 	fclose(fh);
@@ -136,89 +196,5 @@ void update_nodes_pipes() {
 		}
 	}
 	dmesg("\tupdate_nodes_pipes:\tPassed\n", 0);
-}
-
-
-
-
-int install_compressors(char *fname) {
-	FILE *fh = fopen(fname, "r");
-	if (fh) {
-		char line[256];
-		unsigned int m,n,p;
-		int counter = 0;
-		while (counter < net.nodes+net.pipes+1) {
-			fgets(line, 256, fh);
-			counter++;
-			printf("%s", line);
-		}
-		net.comp = malloc(net.comps*sizeof(gcomp_ptr));
-		for (long int j = 0; j < net.comps; j++) {
-		  if (fgets(line, 256, fh) != NULL) dmesg(line, 0);
-			sscanf(line, "%u\t%u\t%u", &m, &n, &p);
-			net.comp[m].loc  = &net.node[n];
-			net.comp[m].dest = &net.pipe[p];
-			printf("Compressor %d (%p) located at %p\n", m, &net.comp[m], &net.node[n]);
-		}
-		for (long int j = 0; j < net.comps; j++) {
-			printf("Cmp %ld (%p): Located at %p\n", j, &net.comp[j], net.comp[j].loc);
-		}
-		int nc;
-		for (long int k = 0; k < net.nodes; k++) {
-		  nc = 0;
-			for (long int j = 0; j < net.comps; j++) {
-				if (net.comp[j].loc == &net.node[k]) nc++;
-			}
-			net.node[k].ncomp = nc;
-			printf("Node %ld has %d compressors\n", k, nc);
-			if (nc != 0) {
-				net.node[k].comp = malloc(nc*sizeof(gcomp_ptr));
-				//for (int l = 0; l < nc; l++) (net.node[k].comp[l]) = NULL;
-			} else (net.node[k].comp) = NULL;
-		}
-		for (long int j = 0; j < net.comps; j++) {
-			printf("Cmp %ld (%p): Located at %p\n", j, &net.comp[j], net.comp[j].loc);
-		}
-		printf("Building compressors into the network\n");
-		long int nn;
-		for (long int k = 0; k < net.nodes; k++) {
-			nn = 0;
-		  for (long int j = 0; j < net.comps; j++) {
-				printf("node %p    comp.loc %p\n", &net.node[k], net.comp[j].loc);
-				if (net.comp[j].loc == &net.node[k]) {
-					sprintf(line, "Compressor %p installed at node %p to %p\n", &net.comp[j], &net.node[k], net.comp[j].dest); 
-					dmesg(line, 0);
-					net.node[k].comp[nn] = &net.comp[j];
-					nn++;
-				}
-			}
-			if (nn != net.node[k].ncomp) dmesg("Error building the network\n",1);
-			else { 
-				sprintf(text, "Node %ld at %p passed successfully\n", k, &net.node[k]);
-				dmesg(text, 0);
-			}
-		}
-		fclose(fh);
-		return 0;
-	} else return 1;
-}
-
-
-FILE* fopen_set(char* fname, char* flag, const unsigned skip_lines) {
-  char line[80];
-  FILE *fh = fopen(fname, flag);
-	if (fh) {
-		for (int j = 0; j < skip_lines; j++) fgets(line, 80, fh);
-	} else dmesg("Cannot open file\n" ,1);
-  return fh;
-}
-
-long int count_data(char *fname) {
-	char line[80];
-	FILE *fh = fopen_set(fname, "r", 3);
-	long int nbase = -1;
-	while(fgets(line, 80, fh)) nbase++;
-	fclose(fh);
-	return nbase;
 }
 

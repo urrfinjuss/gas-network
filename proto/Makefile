@@ -1,6 +1,6 @@
 #Makefile for building C stuff with GSL
 
-C_SRCS= input.c output.c message.c init.c main.c network.c nodes.c comps.c verify.c temporal.c spatial.c
+C_SRCS= input.c output.c message.c init.c main.c network.c nodes.c comps.c verify.c spatial.c
 C_OBJS= $(C_SRCS:.c=.o)
 
 OS := $(shell uname)
@@ -39,9 +39,6 @@ network.o: network.c header.h
 nodes.o: nodes.c header.h
 	$(CC) $(CFLAGS) -c nodes.c $(LDFLAGS)
 
-temporal.o: temporal.c header.h
-	$(CC) $(CFLAGS) -c temporal.c $(LDFLAGS)
-
 comps.o: comps.c header.h
 	$(CC) $(CFLAGS) -c comps.c $(LDFLAGS)
 
@@ -59,6 +56,7 @@ proto: $(C_OBJS)
 	mkdir -p ./debug
 	mkdir -p ./debug/nodes
 	mkdir -p ./debug/comps
+	mkdir -p ./debug/pipes
 
 clean:
 	rm -f *~ *.o

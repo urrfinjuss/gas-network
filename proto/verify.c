@@ -4,13 +4,19 @@ static char text[80];
 
 void verify_input_conf() {
 	dmesg("verify_input_conf:\n", 0);
-	printf("\t[Configuration]\n");
+	printf("\t[Input Configuration]\n");
 	printf("\tname=\t%s\n", par.name);
+	printf("\tstep=\t%.8e\n", par.dx);
 	printf("\tskip=\t%d\n", par.skip);
 	printf("\ttmax=\t%.8e\n", par.tmax/3600.);
 	printf("\tsounds=\t%.8e\n", par.sound);
 	printf("\tDWdiss=\t%.8e\n", par.friction);
 	printf("\tinterp=\t%s\n", par.intmethod);
+	printf("\t[Simulation Configuration]\n");
+	printf("\tTime step\t%.6f secs\n", par.dt); 
+	printf("\tOutput every\t%.2f secs\n", par.skip*par.dt);
+	printf("\tTotal steps\t%u\n", par.nsteps);
+	printf("\tGSL Interp:\t%s\n", par.intmethod);
 	dmesg("verify_input_conf:\tPassed\n", 0);
 }
 
@@ -21,7 +27,6 @@ void verify_network_conf() {
 	verify_comp_conf();
 	dmesg("verify_network_conf:\tPassed\n", 0);
 }
-
 
 void verify_node_conf() {
 	dmesg("\tverify_node_conf:\n", 0);
@@ -66,6 +71,7 @@ void verify_pipe_conf() {
 		printf("\tPipe %d at %p\n", j, &net.pipe[j]);
 		printf("\tSource Node:\t\t%p\n", net.pipe[j].left);
 		printf("\tDestination Node:\t%p\n", net.pipe[j].right);
+		printf("\tCompressor:\t\t%p\n", net.pipe[j].cmp);
 		printf("\tLength:\t\t\t%e\n", net.pipe[j].len*1e-3);
 		printf("\tWidth:\t\t\t%e\n\n", net.pipe[j].wid);
 	}
@@ -82,37 +88,55 @@ void verify_comp_conf() {
 	}
 	dmesg("\tverify_comp_conf:\tPassed\n", 0);
 }
-void verify_consistency() {
-	dmesg("verify_consistency:\n", 0);
-	for (long int j = 0; j < net.nodes; j++) {
-		sprintf(text, "Node %ld:\n", j); dmesg(text, 0);
-		sprintf(text, "type = %u\n", net.node[j].type); dmesg(text, 0);
-		sprintf(text, "ncomp = %u\n", net.node[j].ncomp); dmesg(text, 0);
-		for (int jk = 0; jk < net.node[j].ncomp; jk++) {
-		  sprintf(text, "comp = %p\n", &net.node[j].comp[jk]); dmesg(text, 0);
-		}
-		if (net.node[j].comp != NULL) {
-			for (long int k = 0; k < net.node[j].ncomp; k++) {
-				//verify_compressor();
-				sprintf(text, "compressor (%ld of %u) at node %ld\n", k+1, net.node[j].ncomp, j); 
-				dmesg(text, 0);
-			}
-		}
-		sprintf(text, "nleft = %u\n", net.node[j].nleft); dmesg(text, 0);
-		if (net.node[j].left != NULL) {
-			for (long int k = 0; k < net.node[j].nleft; k++) {
-				sprintf(text, "incoming (%ld at %p) at node %ld\n", k, net.node[j].left[k], j); 
-				dmesg(text, 0);
-			}
-		}
-		sprintf(text, "nright = %u\n", net.node[j].nright); dmesg(text, 0);
-		if (net.node[j].right != NULL) {
-			for (long int k = 0; k < net.node[j].nright; k++) {
-				sprintf(text, "outgoing (%ld at %p) at node %ld\n", k, net.node[j].right[k], j); 
-				dmesg(text, 0);
-			}
-		}
-		dmesg("\n", 0);
+
+void verify_interp_nodes(long int j, long int nbase, FTYPE *Tbase, FTYPE *Vbase) {
+	sprintf(text, "debug/nodes/base_%03ld.txt", j);
+	FILE *fh = fopen(text, "w");
+	fprintf(fh, "# 1. base T 2. base V\n\n");
+	for (long int n = 0; n < nbase + 1; n++) {
+		fprintf(fh, "%.12e\t%.12e\n", Tbase[n], Vbase[n]);
 	}
-	dmesg("verify_consistency:\tPassed\n", 0);
+	fclose(fh);
+	sprintf(text, "debug/nodes/%s_%03ld.txt", par.intmethod, j);
+	fh = fopen(text, "w");
+	fprintf(fh, "# 1. T 2. V (cspline)\n\n");
+	for (long int n = 0; n < par.nsteps; n++) {
+		fprintf(fh, "%.12e\t%.12e\n", n*par.dt, net.node[j].var[n]);
+	}
+	fclose(fh);
+}
+
+void verify_interp_comps(long int j, long int nbase, FTYPE *Tbase, FTYPE *Vbase) {
+	sprintf(text, "debug/comps/base_%03ld.txt", j);
+	FILE *fh = fopen(text, "w");
+	fprintf(fh, "# 1. base T 2. base V\n\n");
+	for (long int n = 0; n < nbase + 1; n++) {
+		fprintf(fh, "%.12e\t%.12e\n", Tbase[n], Vbase[n]);
+	}
+	fclose(fh);
+	sprintf(text, "debug/comps/%s_%03ld.txt", par.intmethod, j);
+	fh = fopen(text, "w");
+	fprintf(fh, "# 1. T 2. interp\n\n");
+	for (long int n = 0; n < par.nsteps; n++) {
+		fprintf(fh, "%.12e\t%.12e\n", n*par.dt, net.comp[j].boost[n]);
+	}
+	fclose(fh);
+}
+
+void verify_set_pipes(long int j) {
+	sprintf(text, "debug/pipes/data_%03ld.txt", j);
+	FILE *fh = fopen(text, "w");
+	gpipe_ptr pipe = &net.pipe[j];
+	gnode_ptr left = net.pipe[j].left;
+	gnode_ptr right = net.pipe[j].right;
+	gcomp_ptr cmp = net.pipe[j].cmp;
+	FTYPE boost = 1.0;
+	if (cmp) boost = cmp->boost[0];
+	fprintf(fh, "# 1. x, km 2. Pressure, MPa 2. Flux, kg/m^2/s\n\n");
+	fprintf(fh, "%.12e\t%.12e\t%.12e\n", 0., 1.0e-03*left->p[0]*boost, pipe->fs[0]/par.sound);
+	for (long int n = 0; n < pipe->N; n++) {
+		fprintf(fh, "%.12e\t%.12e\t%.12e\n", 1.0e-03*par.dx*(n+1), 1.0e-03*pipe->y[0][n], pipe->y[1][n]/par.sound);
+	}
+	fprintf(fh, "%.12e\t%.12e\t%.12e\n", 1.0e-03*pipe->len, 1.0e-03*right->p[0], pipe->fd[0]/par.sound);
+	fclose(fh);
 }

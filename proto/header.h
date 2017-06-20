@@ -8,6 +8,7 @@
 
 #define	DEBUG_MODE	1
 #define	FTYPE	double
+#define	pi	acosl(-1.0L)
 
 typedef struct gas_pipe				gpipe, *gpipe_ptr;
 typedef struct gas_node				gnode, *gnode_ptr;
@@ -16,8 +17,10 @@ typedef struct gas_compressor	gcomp, *gcomp_ptr;
 typedef struct parameters {
 	char					name[80];
 	char					intmethod[80];
+	const gsl_interp_type *iType;
 	unsigned int	skip;
 	unsigned int	nsteps;
+	unsigned int	curr;
 	FTYPE					dt;
 	FTYPE					dx;
 	FTYPE					tmax;
@@ -48,11 +51,14 @@ struct gas_node {
 };
 
 struct gas_pipe {
-  long int N;
+	long int N;
 	FTYPE	dx;
 	FTYPE	*y[2];
+	FTYPE	fs[2];
+	FTYPE	fd[2];
 	FTYPE	len;
 	FTYPE	wid;
+	gcomp_ptr	cmp;
 	gnode_ptr	left, right;
 };
 
@@ -67,7 +73,9 @@ struct gas_compressor {
 extern void dmesg(char *line, unsigned int flag);
 
 // input.c
-extern void read_input_file(char *fname);
+extern FILE* fopen_set(char *fname, char* flag, const unsigned skip_lines);
+extern long int count_data(char *fname);
+extern void read_input_file(char* fname);
 extern void read_network_list(char *fname);
 extern void read_nodes_list(char *fname);
 extern void read_pipes_list(char *fname);
@@ -75,36 +83,38 @@ extern void read_comps_list(char *fname);
 extern void update_nodes_comps();
 extern void update_nodes_pipes();
 
-extern int read_pipe(char *fname, gpipe_ptr pipe);
-extern int install_compressors(char *fname);
-extern int load_initial_data();
-extern FILE* fopen_set(char *fname, char* flag, const unsigned skip_lines);
-extern long int count_data(char *fname);
-
-// network.c
-extern int call_init_network(char *filename);
-extern int build_network();
-
-// temporal.c
-extern int call_init_temporal();
+// init.c
+extern void call_init_network(char *filename);
+extern void call_init_arrays();
+extern void call_init_nodes();
+extern void call_init_comps();
+extern void call_init_pipes();
 
 // verify.c
-extern void verify_consistency();
 extern void verify_input_conf();
 extern void verify_network_conf();
 extern void verify_node_conf();
 extern void verify_pipe_conf();
 extern void verify_comp_conf();
+extern void verify_interp_nodes(long int j, long int nbase, FTYPE *Tbase, FTYPE *Vbase);
+extern void verify_interp_comps(long int j, long int nbase, FTYPE *Tbase, FTYPE *Vbase);
+extern void verify_set_pipes(long int j);
+
 
 // output.c
 extern void network_snapshot();
 extern void dump_pipe(gpipe_ptr in, char *line);
 
 // nodes.c
-extern void call_init_nodes();
+extern void forward_nodes();
+extern void forward_pressure_node(gnode_ptr in);
+extern void calculate_pressure(gnode_ptr in);
+extern void forward_incoming_pipes(gnode_ptr in);
+extern void forward_outgoing_pipes(gnode_ptr in);
+
+extern void forward_transport_node(gnode_ptr in);
 
 // comps.c
-extern void call_init_comps();
 
 // List global variables
 extern network	net;
