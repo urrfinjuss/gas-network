@@ -13,5 +13,8 @@ int main(int argc, char** argv) {
 	call_init_network(argv[1]);
 
 	forward_nodes();
+	forward_interior();
+
+	free_forward_interior();
 	return 0;
 }

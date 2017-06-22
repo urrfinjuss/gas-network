@@ -69,8 +69,7 @@ struct gas_compressor {
 	FTYPE					*boost;
 };
 
-// message.c
-extern void dmesg(char *line, unsigned int flag);
+// main.c
 
 // input.c
 extern FILE* fopen_set(char *fname, char* flag, const unsigned skip_lines);
@@ -83,12 +82,36 @@ extern void read_comps_list(char *fname);
 extern void update_nodes_comps();
 extern void update_nodes_pipes();
 
+// output.c
+extern void network_snapshot();
+extern void dump_pipe(gpipe_ptr in, char *line);
+
+// message.c
+extern void dmesg(char *line, unsigned int flag);
+
 // init.c
 extern void call_init_network(char *filename);
-extern void call_init_arrays();
 extern void call_init_nodes();
 extern void call_init_comps();
 extern void call_init_pipes();
+
+// network.c
+
+// pipes.c
+extern void init_forward_interior();
+extern void free_forward_interior();
+extern void forward_interior();
+extern void forward_pipe(int j);
+
+// nodes.c
+extern void forward_nodes();
+extern void forward_pressure_node(gnode_ptr in);
+extern void forward_transport_node(gnode_ptr in);
+extern void calculate_pressure(gnode_ptr in);
+extern void forward_incoming_pipes(gnode_ptr in);
+extern void forward_outgoing_pipes(gnode_ptr in);
+
+// comps.c
 
 // verify.c
 extern void verify_input_conf();
@@ -99,22 +122,6 @@ extern void verify_comp_conf();
 extern void verify_interp_nodes(long int j, long int nbase, FTYPE *Tbase, FTYPE *Vbase);
 extern void verify_interp_comps(long int j, long int nbase, FTYPE *Tbase, FTYPE *Vbase);
 extern void verify_set_pipes(long int j);
-
-
-// output.c
-extern void network_snapshot();
-extern void dump_pipe(gpipe_ptr in, char *line);
-
-// nodes.c
-extern void forward_nodes();
-extern void forward_pressure_node(gnode_ptr in);
-extern void calculate_pressure(gnode_ptr in);
-extern void forward_incoming_pipes(gnode_ptr in);
-extern void forward_outgoing_pipes(gnode_ptr in);
-
-extern void forward_transport_node(gnode_ptr in);
-
-// comps.c
 
 // List global variables
 extern network	net;

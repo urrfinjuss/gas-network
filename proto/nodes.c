@@ -23,10 +23,41 @@ void forward_nodes() {
 }
 
 void forward_pressure_node(gnode_ptr in) {
-	printf("Processing Pressure Node %p\n", in);
 	in->p[1] = in->var[step+1];
 	forward_incoming_pipes(in);
 	forward_outgoing_pipes(in);
+}
+
+void forward_transport_node(gnode_ptr in) {
+	calculate_pressure(in);
+	forward_incoming_pipes(in);
+	forward_outgoing_pipes(in);
+}
+
+void calculate_pressure(gnode_ptr in) {
+	SectI = 0.0;
+	FlowI = 0.0;
+	for (int k = 0; k < in->nleft; k++) {
+		left = in->left[k];
+		N = (left->N) - 1;
+		w = left->y[0][N] + left->y[1][N];
+		FlowI += 0.25*pi*pow(left->wid,2)*w;
+		SectI += 0.25*pi*pow(left->wid,2);
+	}
+	SectJ = 0.0;
+	FlowJ = 0.0;
+	for (int k = 0; k < in->nright; k++) {
+		right = in->right[k];
+		cmp = right->cmp;
+		wbr = right->y[0][0] - right->y[1][0];
+		if (cmp) boost = cmp->boost[step+1];
+		else boost = 1.0;
+		FlowJ += 0.25*pi*pow(right->wid,2)*wbr;
+		SectJ += 0.25*pi*pow(right->wid,2)*boost;
+	}
+	node_flow = in->var[step+1];
+	in->p[1] = (FlowI + FlowJ) - par.sound*node_flow;
+	in->p[1] = in->p[1]/(SectI + SectJ);
 }
 
 void forward_incoming_pipes(gnode_ptr in) {
@@ -54,47 +85,4 @@ void forward_outgoing_pipes(gnode_ptr in) {
 		printf("Scnd Pressure/Flux:\t%.12e\t%.12e\n", in->p[1], right->fs[1]/par.sound);
 	}
 }
-
-void forward_transport_node(gnode_ptr in) {
-	calculate_pressure(in);
-	forward_incoming_pipes(in);
-	forward_outgoing_pipes(in);
-}
-
-
-void calculate_pressure(gnode_ptr in) {
-	SectI = 0.0;
-	FlowI = 0.0;
-	for (int k = 0; k < in->nleft; k++) {
-		left = in->left[k];
-		N = (left->N) - 1;
-		w = left->y[0][N] + left->y[1][N];
-		FlowI += 0.25*pi*pow(left->wid,2)*w;
-		SectI += 0.25*pi*pow(left->wid,2);
-	}
-	SectJ = 0.0;
-	FlowJ = 0.0;
-	for (int k = 0; k < in->nright; k++) {
-		right = in->right[k];
-		cmp = right->cmp;
-		wbr = right->y[0][0] - right->y[1][0];
-		if (cmp) boost = cmp->boost[step+1];
-		else boost = 1.0;
-		FlowJ += 0.25*pi*pow(right->wid,2)*wbr;
-		SectJ += 0.25*pi*pow(right->wid,2)*boost;
-	}
-	node_flow = in->var[step+1];
-	in->p[1] = (FlowI + FlowJ) - par.sound*node_flow;
-	in->p[1] = in->p[1]/(SectI + SectJ);
-	//printf("Transport Node Pressure: %.12e\n", in->p[1]);
-}
-
-
-
-
-
-
-
-
-
 

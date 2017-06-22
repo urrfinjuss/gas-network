@@ -8,6 +8,7 @@ void call_init_network(char *filename) {
 	call_init_nodes();
 	call_init_comps();
 	call_init_pipes();
+	init_forward_interior();
 }
 
 void call_init_nodes() { 
