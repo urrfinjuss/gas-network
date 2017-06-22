@@ -23,7 +23,7 @@ void call_init_nodes() {
 		for (long int k = 0; k < nbase+1; k++) {
 			fgets(line, 80, fh);
 			sscanf(line, "%lf\t%lf", &Tbase[k], &Vbase[k]);
-			if (net.node[j].type) Vbase[k] = 1.0e+03*Vbase[k];
+			if (net.node[j].type) Vbase[k] = 1.0e+06*Vbase[k];
 		}
 		fclose(fh);
 		gsl_interp_accel *acc = gsl_interp_accel_alloc();
@@ -84,18 +84,18 @@ void call_init_pipes() {
 		FTYPE tmp;
 		fgets(line, 80, fh);
 		sscanf(line, "%lf\t%lf\t%lf", &tmp, &(pipe->left->p[0]), &pipe->fs[0]);
-		(pipe->left)->p[0] =   1.0e+03*(pipe->left)->p[0];
+		(pipe->left)->p[0] =   1.0e+06*(pipe->left)->p[0];
 		pipe->fs[0] = par.sound*pipe->fs[0];
 		for (long int k = 0; k < pipe->N; k++) {
 			fgets(line, 80, fh);
 			sscanf(line, "%lf\t%lf\t%lf", &tmp, &(pipe->y[0][k]), &(pipe->y[1][k]));
-			pipe->y[0][k] =   1.0e+03*pipe->y[0][k];
+			pipe->y[0][k] =   1.0e+06*pipe->y[0][k];
 			pipe->y[1][k] = par.sound*pipe->y[1][k];
 			if (k == 0) pipe->dx = 1.0e+03*tmp;
 		}
 		fgets(line, 80, fh);
 		sscanf(line, "%lf\t%lf\t%lf", &tmp, &(pipe->right->p[0]), &(pipe->fd[0]));
-		pipe->right->p[0] =   1.0e+03*(pipe->right->p[0]);
+		pipe->right->p[0] =   1.0e+06*(pipe->right->p[0]);
 		pipe->fd[0] = par.sound*(pipe->fd[0]);
 		fclose(fh);
 		if (DEBUG_MODE) verify_set_pipes(j);

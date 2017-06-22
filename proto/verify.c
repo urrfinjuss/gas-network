@@ -133,10 +133,10 @@ void verify_set_pipes(long int j) {
 	FTYPE boost = 1.0;
 	if (cmp) boost = cmp->boost[0];
 	fprintf(fh, "# 1. x, km 2. Pressure, MPa 2. Flux, kg/m^2/s\n\n");
-	fprintf(fh, "%.12e\t%.12e\t%.12e\n", 0., 1.0e-03*left->p[0]*boost, pipe->fs[0]/par.sound);
+	fprintf(fh, "%.12e\t%.12e\t%.12e\n", 0., 1.0e-06*left->p[0]*boost, pipe->fs[0]/par.sound);
 	for (long int n = 0; n < pipe->N; n++) {
-		fprintf(fh, "%.12e\t%.12e\t%.12e\n", 1.0e-03*par.dx*(n+1), 1.0e-03*pipe->y[0][n], pipe->y[1][n]/par.sound);
+		fprintf(fh, "%.12e\t%.12e\t%.12e\n", 1.0e-03*par.dx*(n+1), 1.0e-06*pipe->y[0][n], pipe->y[1][n]/par.sound);
 	}
-	fprintf(fh, "%.12e\t%.12e\t%.12e\n", 1.0e-03*pipe->len, 1.0e-03*right->p[0], pipe->fd[0]/par.sound);
+	fprintf(fh, "%.12e\t%.12e\t%.12e\n", 1.0e-03*pipe->len, 1.0e-06*right->p[0], pipe->fd[0]/par.sound);
 	fclose(fh);
 }

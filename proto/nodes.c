@@ -56,7 +56,6 @@ void forward_outgoing_pipes(gnode_ptr in) {
 }
 
 void forward_transport_node(gnode_ptr in) {
-	printf("Processing Transport Node %p\n", in);
 	calculate_pressure(in);
 	forward_incoming_pipes(in);
 	forward_outgoing_pipes(in);
@@ -64,7 +63,6 @@ void forward_transport_node(gnode_ptr in) {
 
 
 void calculate_pressure(gnode_ptr in) {
-	printf("Calculating Pressure at Transport Node\n");
 	SectI = 0.0;
 	FlowI = 0.0;
 	for (int k = 0; k < in->nleft; k++) {
@@ -74,7 +72,6 @@ void calculate_pressure(gnode_ptr in) {
 		FlowI += 0.25*pi*pow(left->wid,2)*w;
 		SectI += 0.25*pi*pow(left->wid,2);
 	}
-	printf("Transport Node Inflow: %.12e\n", FlowI);
 	SectJ = 0.0;
 	FlowJ = 0.0;
 	for (int k = 0; k < in->nright; k++) {
@@ -86,11 +83,10 @@ void calculate_pressure(gnode_ptr in) {
 		FlowJ += 0.25*pi*pow(right->wid,2)*wbr;
 		SectJ += 0.25*pi*pow(right->wid,2)*boost;
 	}
-	printf("Transport Node Outflow: %.12e\n", FlowJ);
 	node_flow = in->var[step+1];
-	in->p[1] = sqrt(2.0)*(FlowI + FlowJ) - node_flow;
+	in->p[1] = (FlowI + FlowJ) - par.sound*node_flow;
 	in->p[1] = in->p[1]/(SectI + SectJ);
-	printf("Transport Node Pressure: %.12e\n", in->p[1]);
+	//printf("Transport Node Pressure: %.12e\n", in->p[1]);
 }
 
 
