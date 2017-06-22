@@ -11,6 +11,21 @@ static FTYPE node_flow;
 static gcomp_ptr cmp;
 static gpipe_ptr left, right;
 
+
+void sync_nodes() {
+	dmesg("sync_nodes:\n", 0);
+	par.curr ++;
+	for (int j = 0; j < net.nodes; j++) {
+		net.node[j].p[0] = net.node[j].p[1];
+	}
+	for (int j = 0; j < net.pipes; j++) {
+		net.pipe[j].fs[0] = net.pipe[j].fs[1];
+		net.pipe[j].fd[0] = net.pipe[j].fd[1];
+	}
+	dmesg("sync_nodes:\tPassed\n", 0);
+	
+}
+
 void forward_nodes() {
 	dmesg("forward_nodes:\n", 0);
 	step = par.curr;

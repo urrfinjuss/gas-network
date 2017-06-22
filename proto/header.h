@@ -104,6 +104,7 @@ extern void forward_interior();
 extern void forward_pipe(int j);
 
 // nodes.c
+extern void sync_nodes();
 extern void forward_nodes();
 extern void forward_pressure_node(gnode_ptr in);
 extern void forward_transport_node(gnode_ptr in);

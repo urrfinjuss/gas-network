@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
 
 	forward_nodes();
 	forward_interior();
+	sync_nodes();
 
 	free_forward_interior();
 	return 0;

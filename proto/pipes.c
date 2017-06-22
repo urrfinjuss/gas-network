@@ -56,9 +56,12 @@ void forward_pipe(int j) {
 	if (cmp) boost = cmp->boost[par.curr];
 	else boost = 1.0;
 	printf("Taking temporal data from step %d\n", par.curr);
-	wpf[j][0] = boost*(pipe->left->p[0]) + pipe->fs[0];
+	wpf[j][0] = boost*(pipe->left->p[0]) + pipe->fs[0];  
 	wmf[j][num-1] = (pipe->right->p[0]) - pipe->fd[0];
-
+	for (int k = 0; k < num; k++) {
+		pipe->y[0][k] = 0.5*(wpf[j][k] + wmf[j][k]);
+		pipe->y[1][k] = 0.5*(wpf[j][k] - wmf[j][k]);
+	}
 	if (DEBUG_MODE) {
 		sprintf(text, "debug/chars_%03d.log", j);
 		FILE *fh = fopen(text, "w");
