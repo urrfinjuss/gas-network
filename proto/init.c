@@ -10,7 +10,7 @@ void call_init_network(char *filename) {
 	call_init_comps();
 	call_init_pipes();
 	init_forward_interior();
-	create_directory("./out");
+	create_directory("./result");
 	init_node_output();
 	init_pipe_output();
 }
@@ -19,7 +19,7 @@ void call_init_nodes() {
 	dmesg("call_init_nodes:\n", 0);
 	if (DEBUG_MODE) create_directory("./debug/nodes");
 	for (long int j = 0; j < net.nodes; j++) {
-		net.node[j].var = malloc(par.nsteps*sizeof(FTYPE));  
+		net.node[j].var = malloc((par.nsteps+1)*sizeof(FTYPE));  
 		sprintf(text, "initialize/bc/nodes/node_%03ld.txt", j);
 		long int nbase = count_data(text);
 		FTYPE *Tbase = malloc((nbase+1)*sizeof(FTYPE));
@@ -35,7 +35,7 @@ void call_init_nodes() {
 		gsl_interp_accel *acc = gsl_interp_accel_alloc();
 		gsl_spline *spline = gsl_spline_alloc(par.iType, nbase+1);
 		gsl_spline_init(spline, Tbase, Vbase, nbase+1);
-		for (long int n = 0; n < par.nsteps; n++) {
+		for (long int n = 0; n < par.nsteps+1; n++) {
 		  net.node[j].var[n] = gsl_spline_eval(spline, n*par.dt, acc);
 		}
 		gsl_spline_free(spline);
@@ -51,7 +51,7 @@ void call_init_comps() {
 	dmesg("call_init_comps:\n", 0);
 	if (DEBUG_MODE) create_directory("./debug/comps");
 	for (long int j = 0; j < net.comps; j++) {
-		net.comp[j].boost = malloc(par.nsteps*sizeof(FTYPE));  
+		net.comp[j].boost = malloc((par.nsteps+1)*sizeof(FTYPE));  
 		sprintf(text, "initialize/bc/comps/comp_%03ld.txt", j);
 		long int nbase = count_data(text);
 		FTYPE *Tbase = malloc((nbase+1)*sizeof(FTYPE));
@@ -66,7 +66,7 @@ void call_init_comps() {
 		gsl_interp_accel *acc = gsl_interp_accel_alloc();
 		gsl_spline *spline = gsl_spline_alloc(par.iType, nbase+1);
 		gsl_spline_init(spline, Tbase, Vbase, nbase+1);
-		for (long int n = 0; n < par.nsteps; n++) {
+		for (long int n = 0; n < par.nsteps+1; n++) {
 		  net.comp[j].boost[n] = gsl_spline_eval(spline, n*par.dt, acc);
 		}
 		gsl_spline_free(spline);
