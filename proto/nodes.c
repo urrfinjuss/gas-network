@@ -76,19 +76,23 @@ void calculate_pressure(gnode_ptr in) {
 }
 
 void forward_incoming_pipes(gnode_ptr in) {
-	printf("Loop over incoming pipes (%u)\n", in->nleft);
+	sprintf(text, "Loop over incoming pipes (%u)\n", in->nleft);
+	dmesg(text, 0);
 	for (int k = 0; k < in->nleft; k++) {
 		left = in->left[k];
 		N = (left->N) - 1;
 		w = left->y[0][N] + left->y[1][N];
 		left->fd[1] = w - in->p[1];
-		printf("Init Pressure/Flux:\t%.12e\t%.12e\n", in->p[0], left->fd[0]/par.sound);
-		printf("Scnd Pressure/Flux:\t%.12e\t%.12e\n", in->p[1], left->fd[1]/par.sound);
+		sprintf(text, "Init Pressure/Flux:\t%.12e\t%.12e\n", in->p[0], left->fd[0]/par.sound);
+		dmesg(text, 0);
+		sprintf(text, "Scnd Pressure/Flux:\t%.12e\t%.12e\n", in->p[1], left->fd[1]/par.sound);
+		dmesg(text, 0);
 	}
 }
 
 void forward_outgoing_pipes(gnode_ptr in) {
-	printf("Loop over outgoing pipes (%u)\n", in->nright);
+	sprintf(text, "Loop over outgoing pipes (%u)\n", in->nright);
+	dmesg(text, 0);
 	for (int k = 0; k < in->nright; k++) {
 		right = in->right[k];
 		cmp = right->cmp;
@@ -96,8 +100,10 @@ void forward_outgoing_pipes(gnode_ptr in) {
 		if (cmp) boost = cmp->boost[step+1];
 		else boost = 1.0;
 		right->fs[1] = boost*in->p[1]-wbr;
-		printf("Init Pressure/Flux:\t%.12e\t%.12e\n", in->p[0], right->fs[0]/par.sound);
-		printf("Scnd Pressure/Flux:\t%.12e\t%.12e\n", in->p[1], right->fs[1]/par.sound);
+		sprintf(text, "Init Pressure/Flux:\t%.12e\t%.12e\n", in->p[0], right->fs[0]/par.sound);
+		dmesg(text, 0);
+		sprintf(text, "Scnd Pressure/Flux:\t%.12e\t%.12e\n", in->p[1], right->fs[1]/par.sound);
+		dmesg(text, 0);
 	}
 }
 

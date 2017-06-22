@@ -5,14 +5,19 @@ static char text[80];
 void call_init_network(char *filename) {
 	read_input_file(filename);
 	read_network_list(par.name);
+	if (DEBUG_MODE) create_directory("./debug");
 	call_init_nodes();
 	call_init_comps();
 	call_init_pipes();
 	init_forward_interior();
+	create_directory("./out");
+	init_node_output();
+	init_pipe_output();
 }
 
 void call_init_nodes() { 
 	dmesg("call_init_nodes:\n", 0);
+	if (DEBUG_MODE) create_directory("./debug/nodes");
 	for (long int j = 0; j < net.nodes; j++) {
 		net.node[j].var = malloc(par.nsteps*sizeof(FTYPE));  
 		sprintf(text, "initialize/bc/nodes/node_%03ld.txt", j);
@@ -44,6 +49,7 @@ void call_init_nodes() {
 
 void call_init_comps() { 
 	dmesg("call_init_comps:\n", 0);
+	if (DEBUG_MODE) create_directory("./debug/comps");
 	for (long int j = 0; j < net.comps; j++) {
 		net.comp[j].boost = malloc(par.nsteps*sizeof(FTYPE));  
 		sprintf(text, "initialize/bc/comps/comp_%03ld.txt", j);
@@ -74,6 +80,7 @@ void call_init_comps() {
 
 void call_init_pipes() {
 	dmesg("call_init_pipes:\n", 0);
+	if (DEBUG_MODE) create_directory("./debug/pipes");
 	for (long int j = 0; j < net.pipes; j++) {
 		gpipe_ptr pipe = &net.pipe[j];
 		sprintf(text, "initialize/ic/data_%03ld.txt", j);

@@ -1,3 +1,15 @@
+#ifdef __linux__
+#define  OS 0
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif /* linux */
+
+#ifdef _WIN32
+#define  OS 1
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif /* windows */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +18,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
 
-#define	DEBUG_MODE	1
+#define	DEBUG_MODE	0
 #define	FTYPE	double
 #define	pi	acosl(-1.0L)
 
@@ -83,8 +95,12 @@ extern void update_nodes_comps();
 extern void update_nodes_pipes();
 
 // output.c
-extern void network_snapshot();
+extern void create_directory(char *path);
+extern void init_node_output();
+extern void init_pipe_output();
+extern void network_snapshot( long int k);
 extern void dump_pipe(gpipe_ptr in, char *line);
+extern void dump_node(gnode_ptr in, char *line);
 
 // message.c
 extern void dmesg(char *line, unsigned int flag);
@@ -96,6 +112,8 @@ extern void call_init_comps();
 extern void call_init_pipes();
 
 // network.c
+extern void hyperbolic_step();
+extern void evolve_network();
 
 // pipes.c
 extern void init_forward_interior();

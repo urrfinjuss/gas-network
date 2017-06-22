@@ -48,15 +48,10 @@ verify.o: verify.c header.h
 proto: $(C_OBJS)
 	echo "$(OS)"
 	$(CC) -o proto.x $(C_OBJS) $(LFLAGS) $(LDFLAGS)
-	mkdir -p ./out
 	mkdir -p ./initialize/ic
 	mkdir -p ./initialize/bc
 	mkdir -p ./initialize/bc/comps
 	mkdir -p ./initialize/bc/nodes
-	mkdir -p ./debug
-	mkdir -p ./debug/nodes
-	mkdir -p ./debug/comps
-	mkdir -p ./debug/pipes
 
 clean:
 	rm -f *~ *.o

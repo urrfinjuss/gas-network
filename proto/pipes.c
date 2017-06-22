@@ -37,7 +37,8 @@ void free_forward_interior() {
 void forward_interior() {
 	dmesg("forward_interior:\n", 0);
 	for (int j = 0; j < net.pipes; j++) {
-		printf("Forward interior of pipe %d\n", j);
+		sprintf(text, "Forward interior of pipe %d\n", j);
+		dmesg(text, 0);
 		forward_pipe(j);
 	}
 	dmesg("forward_interior:\tPassed\n", 0);
@@ -55,7 +56,8 @@ void forward_pipe(int j) {
 	memmove(&wmf[j][0], &wmi[j][1], (num-1)*sizeof(FTYPE));
 	if (cmp) boost = cmp->boost[par.curr];
 	else boost = 1.0;
-	printf("Taking temporal data from step %d\n", par.curr);
+	sprintf(text, "Taking temporal data from step %d\n", par.curr);
+	dmesg(text, 0);
 	wpf[j][0] = boost*(pipe->left->p[0]) + pipe->fs[0];  
 	wmf[j][num-1] = (pipe->right->p[0]) - pipe->fd[0];
 	for (int k = 0; k < num; k++) {

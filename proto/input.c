@@ -154,7 +154,7 @@ void update_nodes_comps() {
 		int k = 0;
 		while (k < net.comp[j].loc->ncomp) {
 			if (net.comp[j].loc->comp[k] == NULL) {
-				printf("Compressor %d placed to slot %d on node %p\n", j, k, net.comp[j].loc);
+				//printf("Compressor %d placed to slot %d on node %p\n", j, k, net.comp[j].loc);
 				net.comp[j].loc->comp[k] = &net.comp[j];
 				break;
 			}
@@ -180,7 +180,7 @@ void update_nodes_pipes() {
 		int l = 0, r = 0;
 		while (l < net.pipe[j].right->nleft) {
 			if (net.pipe[j].right->left[l] == NULL) {
-				printf("Pipe %d incoming to slot %d on node %p\n", j, l, net.pipe[j].right);
+				//printf("Pipe %d incoming to slot %d on node %p\n", j, l, net.pipe[j].right);
 				net.pipe[j].right->left[l] = &net.pipe[j];
 				break;
 			}
@@ -188,7 +188,7 @@ void update_nodes_pipes() {
 		}
 		while (r < net.pipe[j].left->nright) {
 			if (net.pipe[j].left->right[r] == NULL) {
-				printf("Pipe %d outgoing from slot %d on node %p\n", j, r, net.pipe[j].left);
+				//printf("Pipe %d outgoing from slot %d on node %p\n", j, r, net.pipe[j].left);
 				net.pipe[j].left->right[r] = &net.pipe[j];
 				break;
 			}
