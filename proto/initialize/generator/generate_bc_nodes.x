@@ -41,7 +41,7 @@ function generate_demand_node(fname, dt, tmax, flow)
 			if (k <= nsteps/2)
 				fprintf(fh, "%.12e\t%.12e\n", k*dt, flow);
 			else 
-				fprintf(fh, "%.12e\t%.12e\n", k*dt, flow+0.5);
+				fprintf(fh, "%.12e\t%.12e\n", k*dt, flow + 4.0); % switch from 0.5 to 4.0
 			endif
 		end
 		fclose(fh);
