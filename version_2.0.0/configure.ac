@@ -15,7 +15,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
 
 # Enable "automake"
-AM_INIT_AUTOMAKE([1.15 subdir-objects -Wall])
+AM_INIT_AUTOMAKE([1.15 subdir-objects])
 
 # Look for a C compiler
 AC_PROG_CC
