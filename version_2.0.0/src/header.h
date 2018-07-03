@@ -2,6 +2,7 @@
 #define  OS 0
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "hdf5.h"
 #endif /* linux */
 
 #ifdef _WIN32
@@ -102,6 +103,9 @@ extern void init_pipe_output();
 extern void network_snapshot( long int k);
 extern void dump_pipe(gpipe_ptr in, char *line);
 extern void dump_node(gnode_ptr in, char *line);
+
+// hdf5_output.c 
+extern void create_sample_hdf5_file(); 
 
 // message.c
 extern void dmesg(char *line, unsigned int flag);

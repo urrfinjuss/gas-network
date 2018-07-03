@@ -1,0 +1,17 @@
+Machine Learning For Gas Network.
+
+(a) As a simple problem we choose deterministically periodic 
+functions $d_j(t)$ for $j = 1,\ldots,N$ for every gas draw node 
+of the gas network. 
+(ML Goal) Train the AI to choose optimal functions $c_k(t)$ to hold the
+network in the optimal state. To define an optimal state we may:
+1. Penalize underpressure and overpressure, and
+2. Penalize fluxes that are too high.
+(b) Make those functions $d_j(t)$ stochastic?
+
+(c) (ML Goal) Train the AI to determine/estimate unknown gas draw $d_j(t)$
+from a set of pressure/flux sensors $s_k(t)$ in the network. Assume that the 
+compression functions $c_k(t)$ are known and so are the input nodes. 
+
+
+
